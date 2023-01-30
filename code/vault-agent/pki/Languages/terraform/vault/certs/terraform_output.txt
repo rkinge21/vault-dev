@@ -1,0 +1,4 @@
+expiration = 1672772597
+id = "pki_int/mcu-role/avengers.mcu.com"
+private_key_type = "rsa"
+serial_number = "17:d8:72:e7:27:8f:54:57:71:3c:6e:9f:9e:59:77:41:e7:bd:da:ac"

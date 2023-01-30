@@ -1,0 +1,13 @@
+{
+  "role_type": "jwt",
+  "token_ttl": 3600,
+  "token_max_ttl": 3600,
+  "token_explicit_max_ttl": 3600,
+  "token_policies": [ "cicd-policy", "payment-deploy-policy" ],
+  "policies": [ "cicd-policy", "payment-deploy-policy" ],
+  "user_claim": "sub",
+  "bound_claims": {
+    "service_name": "payment",
+    "branch": "main"
+  }
+}

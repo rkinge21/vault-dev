@@ -1,0 +1,12 @@
+[Unit]
+Description=A description for your custom service goes here
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/bin/bash /usr/sbin/start-app.sh
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

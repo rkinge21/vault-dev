@@ -1,0 +1,468 @@
+!!! ---------------------------------------------  DEV Mode ---------------------------------------------!!!
+cd /e/Tutorials/Vault/VaultWork/dev/
+Create 2 directories :
+	mkdir vault-data
+	mkdir logs
+	
+cd /e/Tutorials/Vault/VaultWork/dev/
+>vault_audit_raw.log
+>logs/vault.log
+
+export VAULT_ADDR=http://127.0.0.1:8200
+export VAULT_TOKEN="root"
+export LOG_FILE='/e/Tutorials/Vault/VaultWork/dev/logs/vault.log'
+nohup vault server -dev -dev-root-token-id root > $LOG_FILE 2>&1 &
+
+sleep 5
+cat logs/vault.log
+
+vault operator unseal 
+vault status
+
+
+Cross-Chek :
+	 curl -k -s --head $VAULT_ADDR/v1/sys/health
+	 curl -s -H "X-Vault-Token: $VAULT_TOKEN" --request GET  $VAULT_ADDR/v1/sys/host-info | jq -r .
+	 or
+	 http://127.0.0.1:8200/ui/
+	 or 
+	 vault status
+
+Kill Process :
+	ps -ef | grep vault
+	kill -9 692
+
+
+!!! ---------------------------------------------  Enabling/Disabling Audit ---------------------------------------------!!!
+
+
+vault audit enable file file_path=/e/Tutorials/Vault/VaultWork/dev/vault_audit.log
+# or
+vault audit enable file -path="file_raw" log_raw=true file_path=/e/Tutorials/Vault/VaultWork/dev/vault_audit_raw.log
+
+
+
+!!! ---------------------------------------------  Enterprise Mode ---------------------------------------------!!!
+
+cd /e/Tutorials/Vault/VaultWork/enterprise
+
+Create 2 directories :
+	mkdir vault-data
+	mkdir logs
+	
+
+Create a file --> config.hcl
+	storage "file" {
+	  path    = "/e/Tutorials/Vault/VaultWork/enterprise/vault-data"
+	  node_id = "node1"
+	}
+
+	listener "tcp" {
+	  address     = "127.0.0.1:8200"
+	  tls_disable = "true"
+	}
+
+	ui = true
+	api_addr 		= "http://127.0.0.1:8200"
+	disable_mlock 	= true
+	log_level 		= "TRACE"
+	cluster_addr 	= "http://127.0.0.1:8201"
+
+
+
+cd /e/Tutorials/Vault/VaultWork/enterprise
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+export VAULT_TOKEN=""
+export LOG_FILE='/e/Tutorials/Vault/VaultWork/enterprise/logs/vault.log'
+nohup vault server -config=/e/Tutorials/Vault/VaultWork/enterprise/config.hcl > $LOG_FILE 2>&1 &
+
+
+
+$ vault operator init
+		Unseal Key 1: Ap3DaTeuyA2vTHCvMQ3PvMTvuRexcx3KHmI8BRFu4SA6
+		Unseal Key 2: tEwUubOlgCffTSTzJxsQcQ4bJlJCnzqrIr0ToB2omTas
+		Unseal Key 3: qJl1pBrMtbirsfx2mDbfbCnbhzcGlyUhAjo8nm0b9LLB
+		Unseal Key 4: ayUNVw0rqrTFjPYSLPTAEHEb5sHaIROZupEFHXT7XuCS
+		Unseal Key 5: 6O34FCuPwTV4aTd8xUP2+avtUDwkeqf70pakLCy09c3U
+
+		Initial Root Token: hvs.0LEwmKfdK5IPzZBQEQWDh4MF
+
+		Vault initialized with 5 key shares and a key threshold of 3. Please securely
+		distribute the key shares printed above. When the Vault is re-sealed,
+		restarted, or stopped, you must supply at least 3 of these keys to unseal it
+		before it can start servicing requests.
+
+		Vault does not store the generated root key. Without at least 3 keys to
+		reconstruct the root key, Vault will remain permanently sealed!
+
+		It is possible to generate new unseal keys, provided you have a quorum of
+		existing unseal keys shares. See "vault operator rekey" for more information.
+
+
+
+
+
+
+export VAULT_TOKEN=hvs.9g308xTUlo174CVRuK5YWKRQ
+
+vault operator unseal Ap3DaTeuyA2vTHCvMQ3PvMTvuRexcx3KHmI8BRFu4SA6
+vault operator unseal qJl1pBrMtbirsfx2mDbfbCnbhzcGlyUhAjo8nm0b9LLB
+vault operator unseal ayUNVw0rqrTFjPYSLPTAEHEb5sHaIROZupEFHXT7XuCS
+
+
+Cross-Chek :
+	 curl -k -s --head $VAULT_ADDR/v1/sys/health
+	 or
+	 http://127.0.0.1:8200/ui/
+	 or 
+	 vault status
+
+Kill Process :
+	ps -ef | grep vault
+	kill -9 692
+
+
+
+
+!!! ---------------------------------------------  Create your first secret in KV ---------------------------------------------!!!
+
+vault login -address="http://127.0.0.1:8200" root
+
+
+# Let's first see which secrets engines are enabled
+vault secrets list
+
+# Now let's get our secrets engines enabled
+# We'll start with the enabling the K/V engine
+
+vault secrets enable -path=MCUKV -version=2 kv
+vault secrets list
+
+
+# Maybe we want to configure some settings for MCUKV
+vault secrets tune -description="Marvel Comics K/V version 2" MCUKV
+vault read MCUKV/config
+vault secrets list
+
+
+# Let's set the max_versions to 5
+vault write MCUKV/config max_versions=5
+vault read MCUKV/config
+vault secrets list
+
+
+# Disable Engine
+vault secrets disable MCUKV/
+vault secrets list
+
+
+
+
+Subcommand				kv v1		kv v2		Description
+list							x				x				List data or secrets
+get								x				x				Retrieve data
+put								x				x				Sets or update secrets (this replaces existing secrets)
+delete						x				x				Delete versions of secrets stored in K/V
+undelete									x				Restore the deleted version of secrets
+destroy										x				Permanently remove one or more versions of secrets
+enable-versioning					x				Turns on versioning for an existing K/V v1 store
+metadata									x				Interact with Vaults Key-Value storage
+patch											x				Update secrets without overwriting existing secrets
+rollback									x				Rolls back to a previous version of secrets
+
+
+!!! ---------------------------------------------  Secrets Engine ---------------------------------------------!!!
+
+# Now set your Vault address environment variable
+export VAULT_ADDR=http://127.0.0.1:8200
+export VAULT_TOKEN="root"
+vault login root
+
+
+# secret/  is KV secret path for v2 by default, hence we don't need to enable it
+# Create Secret :
+vault kv put secret/hello myname=rahul
+vault kv get secret/hello
+
+# Create Version :
+vault kv put secret/hello myname=rahul excited=yes
+vault kv get secret/hello     # --> always pulls latest version
+
+# Fetch Specific Version :
+vault kv get -version=2 secret/hello
+vault kv get -field=excited secret/hello
+
+# Delete KV :
+vault kv delete   -versions=2 secret/hello
+vault kv undelete -versions=2 secret/hello
+vault kv destroy  -versions=2 secret/hello
+
+vault kv get -version=1 secret/hello
+
+vault kv destroy  -versions=1 secret/hello
+vault kv destroy  secret/hello
+
+
+
+!!! ---------------------------------------------  Authentication ---------------------------------------------!!!
+
+
+!!! -----------------------   Auth method - UserPass  ------------------------!!!
+vault auth list
+vault auth list -detailed
+
+
+# Enable Auth method at default path
+vault auth enable userpass
+
+vault write auth/userpass/users/admin password=Password2022! policies=admin
+vault login -method=userpass username=admin password=Password2022!
+
+vault auth disable userpass
+
+
+
+# Enable Auth method at specific path --> auth/mcu-users/users/captain
+vault auth enable -path=mcu-users userpass
+
+vault write auth/mcu-users/users/captain password=America policies=xyz
+vault login -method=userpass -path=mcu-users  username=captain password=America
+
+vault auth disable mcu-users
+
+
+!!! -----------------------   Auth method - AppRole  ------------------------!!!
+
+vault auth enable approle
+
+vault write auth/approle/role/jenkins period="1h"
+
+vault read auth/approle/role/jenkins/role-id 
+vault write -f auth/approle/role/jenkins/secret-id    # --> -f is for force
+
+vault write auth/approle/login role_id=7f367862-18ef-76bb-fbb3-bcba74081a8f   secret_id=5fa84456-b9c8-17de-aef7-6db2edfa8229
+
+
+
+!!! -----------------------   Auth method - Token  ------------------------!!!
+
+# ----------------     Create Token as per policy     -----------------
+vault token create
+vault token create -ttl=1h -use-limit=2 -policy=jenkins
+
+# ----------------     Create Token as per role     -----------------
+vault write auth/token/roles/dexter   allowed_policies="policy1, policy2, policy3"  period=8h
+vault token create -role=dexter
+
+
+export VAULT_TOKEN="hvs.CAESIJpDr4881YGbpXkam9hhIAwS-XDkaKRW_q-V47Wb1HX4Gh4KHGh2cy5BTVJqSktmelYwb2FjNTFrN3VXbkpLeDI"
+vault token lookup
+
+vault login <your token>
+
+
+vault path-help secret/data/appdev-kv/*
+vault token capabilities hvs.CAESIEe3sxRCQbCHuCNHDTzPDAj3Uf_svq60-2gTONwgnTvIGh4KHGh2cy5hWHRESEFJTlpiRUJ1SDlySmZpQ3V3aGY secret/data/appdev-kv/*
+
+vault token revoke <your token>
+
+
+
+
+
+
+
+
+
+
+
+
+
+!!! ---------------------------------------------  Auth methods - AppRole - Explained ---------------------------------------------!!!
+
+vault auth list
+vault secrets list
+
+# ----------------     Create KV secrets      -----------------
+# before enabling auth method --> approle, let's create KV secrets and policiy first 
+vault kv put secret/mysql/webapp db_name="users" username="Iron" password="Man"
+vault kv get secret/mysql/webapp
+
+
+# ----------------     Create Policy      -----------------
+vault policy list
+
+vault policy write jenkins-policy -<<EOF
+# Read-only permission on secrets stored at 'secret/data/mysql/webapp'
+path "secret/data/mysql/webapp" {
+  capabilities = [ "read" ]
+}
+EOF
+vault policy read jenkins-policy
+
+
+# ----------------     Create AppRole      -----------------
+vault auth enable approle
+
+vault write auth/approle/role/jenkins-role \
+    token_ttl=60m \
+    token_policies="jenkins-policy"
+
+# vault write auth/approle/role/jenkins-role token_policies="jenkins-policy"  token_ttl=1h  token_max_ttl=2h  secret_id_num_uses=2
+	# Note: To attach multiple policies,  token_policies="jenkins-policy,anotherpolicy".
+
+
+# ----------------     Read AppRole      -----------------
+vault read auth/approle/role/jenkins-role
+
+
+export VAULT_TOKEN="root"
+vault read auth/approle/role/jenkins-role/role-id							#  like username - fixed
+vault write -force auth/approle/role/jenkins-role/secret-id		#  like password - generate a new value every time you request it.
+
+
+vault write auth/approle/login role_id="9c7507c7-b246-219f-1e25-a388e8926eb8" secret_id="5f499517-44df-6532-9397-1fa68018ebf9"
+export VAULT_TOKEN="hvs.CAESIAeksGXWZugv-EosIY8QepRIDVGKAscqOgTqw0s4RsIVGh4KHGh2cy5BT2hXMXJoZExOMG1QbmZEa1Y5MldmWm0"
+vault token lookup
+
+# or
+
+curl -k --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request POST \
+    --data '{"role_id":"","secret_id":""}' \
+    $VAULT_ADDR/v1/auth/approle/login | jq -r .
+
+
+export VAULT_TOKEN=""
+vault token lookup
+
+
+vault kv get secret/mysql/webapp
+	# Success
+
+vault kv delete secret/mysql/webapp
+	# Error deleting secret/data/mysql/webapp: Error making API request.
+	# URL: DELETE http://127.0.0.1:8200/v1/secret/data/mysql/webapp
+	# Code: 403. Errors:
+	# * 1 error occurred:
+	#         * permission denied
+
+vault kv put secret/mysql/webapp db_name="users1"
+	# Error writing data to secret/data/mysql/webapp: Error making API request.
+	# URL: PUT http://127.0.0.1:8200/v1/secret/data/mysql/webapp
+	# Code: 403. Errors:
+	# * 1 error occurred:
+	#         * permission denied
+
+
+!!! ---------------------------------------------  How to Make Secret-ID secure ---------------------------------------------!!!
+
+1. Limit the SecretID usages
+2. Response wrap the SecretID
+	use response wrapping so that only the expecting client can unwrap the SecretID.
+
+
+vault write -wrap-ttl=10s -force auth/approle/role/jenkins-role/secret-id
+
+
+vault unwrap hvs.CAESIOXigDZU5aeD3dO97yl-5AbN-0yWFhL7ZV4ByE0MNPmJGh4KHGh2cy5aYW9acXVuUXR2N2Fwc0N1NjZZVDM3a3g
+Key                   Value
+---                   -----
+secret_id             1480c572-e653-1bc7-6acd-a777bb6ea0c7
+secret_id_accessor    22cdb640-3523-2dad-1ad8-d46444ba6c49
+secret_id_ttl         0s
+
+
+
+!!! ---------------------------------------------   ---------------------------------------------!!!
+
+# login as root - DO NOT DO THIS IN PRODUCTION
+export VAULT_TOKEN=root
+
+# write some secrets
+vault kv put secret/jenkins-user username=blue password=eleventeen
+
+
+# create policy
+vault policy list
+
+vault policy write jenkins-new-policy -<<EOF
+path "secret/data/jenkins-user" {
+  capabilities = ["list", "read"]
+}
+EOF
+vault policy read jenkins-new-policy
+
+
+export VAULT_TOKEN="root"
+
+# configure approle role named "jenkins-new-role"
+vault write auth/approle/role/jenkins-new-role \
+    secret_id_ttl=30s \
+    secret_id_num_uses=3 \
+    secret_id_bound_cidrs="0.0.0.0/0","127.0.0.1/32" \
+    token_num_uses=5 \
+    token_ttl=30m \
+    token_max_ttl=1h \
+    token_bound_cidrs="0.0.0.0/0","127.0.0.1/32" \
+    token_policies="jenkins-new-policy"
+
+
+vault read auth/approle/role/jenkins-new-role
+
+# Error : 
+# secret_id_ttl --> Code: 400. Errors: * invalid secret id
+# token_ttl     --> Code: 403. Errors: * permission denied
+
+
+
+# Read role-id
+ROLE_ID=$(vault read -format=json auth/approle/role/jenkins-new-role/role-id | jq -r '.data.role_id')
+echo -e "\nROLE_ID   --> ${ROLE_ID}"
+
+# generate secret-id
+SECRET_ID=$(vault write -f -field=secret_id auth/approle/role/jenkins-new-role/secret-id )
+echo "SECRET_ID --> ${SECRET_ID}"
+
+vault write  auth/approle/login  role_id=${ROLE_ID}  secret_id=${SECRET_ID}
+
+
+# login with role-id + secret-id
+export VAULT_TOKEN=$(vault write -format=json auth/approle/login  role_id=${ROLE_ID}  secret_id=${SECRET_ID} | jq -r '.auth.client_token')
+
+# test resulting token
+vault token lookup
+
+
+
+export VAULT_TOKEN=root
+
+
+!!! ---------------------------------------------   ---------------------------------------------!!!
+
+# create token scoped that only allows retrieval of secret-id
+echo 'path "auth/approle/role/jenkins-new-role/secret-id" {
+  capabilities = ["create","update"]
+}' | vault policy write orchestrator -
+
+vault token create -period="8h" -policy=orchestrator
+
+# login with new token
+export VAULT_TOKEN="hvs.CAESILsZAQBWnguduQY5GasCJfk92QAlbOm6lcGcnFL-YJh6Gh4KHGh2cy55UE42UVE0RjIycEk5NnhlUFg2dE1jczM"
+
+
+# Test SUCCESS
+vault write -f auth/approle/role/jenkins-new-role/secret-id
+
+# TEST FAILURES
+vault read auth/approle/role/jenkins-new-role/role-id
+
+
+export VAULT_TOKEN=root
+
+
+
+!!! ---------------------------------------------   ---------------------------------------------!!!
+
+

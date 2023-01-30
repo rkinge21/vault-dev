@@ -1,0 +1,3 @@
+{{ with secret "pki_int/issue/mcu-role" "common_name=avengers.mcu.com" "alt_names=ironman.mcu.com,captain.mcu.com"  "ttl=30s" }}
+{{ .Data.private_key }}
+{{ end }}

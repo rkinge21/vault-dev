@@ -1,0 +1,180 @@
+Rahul-RHEL76-Vault-SSH :
+ssh rahulkinge@devtestlabinternet154148380005.uksouth.cloudapp.azure.com -p 56266
+devtestlabinternet154148380005.uksouth.cloudapp.azure.com
+SSH / 56266
+
+
+Rahul-Wind10 :
+devtestlabinternet3779563284009.uksouth.cloudapp.azure.com
+RDP / 63631
+
+
+Rahul-TFE-RHEL81 :
+ssh rahulkinge@devtestlabinternet3779563284009.uksouth.cloudapp.azure.com -p 62418
+SSH / 62418
+
+
+Rahul-TFE-RHEL81 :
+ssh rahulkinge@devtestlabinternet3779563284009.uksouth.cloudapp.azure.com -p 59961
+SSH / 59961
+
+
+Cockpit :
+	sudo yum install cockpit -y
+	sudo firewall-cmd --add-service=cockpit
+	sudo firewall-cmd --add-service=cockpit --permanent
+	sudo systemctl enable --now cockpit.socket
+	https://10.0.0.10:9090
+
+
+sudo wget https://releases.hashicorp.com/vault/1.9.3/vault_1.9.3_linux_amd64.zip
+unzip vault_1.9.3_linux_amd64.zip
+sudo chown root:root vault
+sudo mv vault /usr/local/bin/
+vault --version
+
+
+mkdir -p -m755 /home/rahulkinge/vault-data/
+mkdir -p -m755 /home/rahulkinge/logs/
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+export LOG_FILE=/home/rahulkinge/logs/vault.log
+
+vi config.hcl
+		storage "raft" {
+		  path    = "/home/rahulkinge/vault-data"
+		  node_id = "node1"
+		}
+
+		listener "tcp" {
+		  address     = "127.0.0.1:8200"
+		  tls_disable = "true"
+		}
+
+		api_addr = "http://127.0.0.1:8200"
+		cluster_addr = "http://127.0.0.1:8201"
+		ui = true
+		disable_mlock = true
+		log_level = "TRACE"
+
+
+nohup /usr/local/bin/vault server -config=/home/rahulkinge/config.hcl > $LOG_FILE 2>&1 &
+
+vault operator init
+		------------------  Rahul-TFE-RHEL81   ---------------
+		  Output :
+					Unseal Key 1: gRQ1ggcMNrQ8lrP7COHW/ItnQqUhLjFjS6FoDrcYdyqv
+					Unseal Key 2: mLSK2ZCOUI939jqlv7158KwweAPUviSD1Qf3lbHXcRQR
+					Unseal Key 3: 6rHjplCad1u9U2PM2hMwE736Jf0jMnUmIeVsFzrkxphT
+					Unseal Key 4: CacOawlV6Jxux21afhYBAeLifq2RqapgBpKifOBjNoAp
+					Unseal Key 5: cfLkfXvtCVffn9GqQaN48RNEMk8fkPcSIWHTWhMniZJB
+
+					Initial Root Token: s.VHfXbqw1mhceRMNPx3dLug38
+
+		------------------  Rahul-GitlabVault-RHEL81   ---------------
+		  Output :
+					Unseal Key 1: 6+5xVVqa7uBuO7iJrA264ia/ie0mJtX4E2sIPp+vRHWK
+					Unseal Key 2: D0LKM7NI0NIe3gAoWvhSLFIra73A4rNX+KNn1CQOF0lL
+					Unseal Key 3: RXJGjwUaaZm8ARwwi+qCrcBzf8vGQRKA1zXVIKEJPrt/
+					Unseal Key 4: lHArND+HcdOP1mg/Zz0ncm60+CWutnU0FRqfGiSPDEL/
+					Unseal Key 5: ZJga5Iazew9hClobFa/v6k4Hu9ckNO1YzmQ9RgzCU8yL
+
+					Initial Root Token: s.1KahMl2PU5h9c3YAVojIiHjr
+
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+export VAULT_TOKEN='s.1KahMl2PU5h9c3YAVojIiHjr'
+
+
+vault operator unseal   :   x3 times
+
+
+
+---------------------     Vault as a Service      ------------------------
+
+sudo vi /etc/systemd/system/vault_boot.service
+
+		[Unit]
+		Description=Description for Vault Start UP script goes here
+		After=network.target
+
+		[Service]
+		User=root
+		ExecStart=/bin/bash /home/rahulkinge/run.sh
+		TimeoutStartSec=0
+
+		[Install]
+		WantedBy=multi-user.target
+
+
+sudo systemctl daemon-reload
+sudo systemctl enable vault_boot.service
+sudo systemctl start vault_boot.service
+sudo systemctl status vault_boot.service
+sudo systemctl reboot
+
+
+curl -k --write-out '%{http_code}\n' --head --silent --output /dev/null $VAULT_ADDR/v1/sys/health
+
+curl -k --write-out %{http_code} -XPUT -H "Content-Type: application/json" -d @"vault_key_1" "$VAULT_ADDR/v1/sys/unseal"
+
+
+---------------------     Create trusted-user-ca-keys.pem      ------------------------
+
+curl http://127.0.0.1:8200/v1/ssh-client-signer/public_key -o /etc/ssh/trusted-user-ca-keys.pem
+
+sudo vi /etc/ssh/sshd_config
+  Add below entry :
+    TrustedUserCAKeys /etc/ssh/trusted-user-ca-keys.pem
+
+sudo systemctl status sshd
+sudo systemctl stop sshd
+sudo systemctl start sshd
+sudo systemctl status sshd
+
+---------------------     Create Role for User      ------------------------
+
+vault write ssh-client-signer/roles/rahulkinge-user-role -<<"EOH"
+{
+  "algorithm_signer": "rsa-sha2-256",
+  "allow_user_certificates": true,
+  "allowed_users": "rahulkinge",
+  "allowed_extensions": "permit-pty,permit-port-forwarding",
+  "default_extensions": [
+    {
+	    "permit-pty": "",
+	    "permit-port-forwarding": "",
+	    "permit-X11-forwarding": "",
+	    "permit-agent-forwarding": ""
+    }
+  ],
+  "key_type": "ca",
+  "default_user": "rahulkinge",
+  "ttl": "30m0s"
+}
+EOH
+
+
+---------------------     Sign SSH Key      ------------------------
+
+ssh-keygen -f rahul-vaultssh-key
+
+vault write -field=signed_key ssh-client-signer/sign/rahulkinge-user-role public_key=@/home/rahulkinge/rahul-vaultssh-key.pub > vault_ssh_signed_cert.pub
+
+
+
+---------------------     Login Using Signed Key       ------------------------
+
+View enabled extensions, principals, and metadata of the signed key.
+  ssh-keygen -Lf vault_ssh_signed_cert.pub
+
+
+Vault SSH :
+  ssh -i vault_ssh_signed_cert.pub -i rahul-vaultssh-key rahulkinge@devtestlabinternet2120663460001.uksouth.cloudapp.azure.com -p 50092
+
+  ssh -i vault_ssh_signed_cert.pub -i rahul-vaultssh-key rahulkinge@devtestlabinternet2120663460001.uksouth.cloudapp.azure.com -p 65521
+
+
+ sudo systemctl restart sshd
+
+ 

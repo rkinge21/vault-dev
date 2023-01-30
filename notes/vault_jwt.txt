@@ -1,0 +1,214 @@
+!!! ---------------------------------------------  DEV Mode ---------------------------------------------!!!
+cd /e/Tutorials/Vault/VaultWork/dev/
+Create 2 directories :
+	mkdir vault-data
+	mkdir logs
+	
+cd /e/Tutorials/Vault/VaultWork/dev/
+>vault_audit_raw.log
+>logs/vault.log
+
+export VAULT_ADDR=http://127.0.0.1:8200
+export VAULT_TOKEN="root"
+export LOG_FILE='/e/Tutorials/Vault/VaultWork/dev/logs/vault.log'
+nohup vault server -dev -dev-root-token-id root > $LOG_FILE 2>&1 &
+
+sleep 5
+cat logs/vault.log
+
+vault operator unseal 
+vault status
+
+
+Cross-Chek :
+	 curl -k -s --head $VAULT_ADDR/v1/sys/health
+	 curl -s -H "X-Vault-Token: $VAULT_TOKEN" --request GET  $VAULT_ADDR/v1/sys/host-info | jq -r .
+	 or
+	 http://127.0.0.1:8200/ui/
+	 or 
+	 vault status
+
+Kill Process :
+	ps -ef | grep vault
+	kill -9 692
+
+
+!!! ---------------------------------------------  JWT ---------------------------------------------!!!
+Ref : https://amirsoleimani.medium.com/securely-using-secrets-in-a-pipeline-hashicorp-vault-jwt-auth-fa0a7eeb7e29
+
+
+# ----------------     Enable JWT Engine      -----------------
+vault auth enable jwt
+
+
+# ----------------     Create KV Secrets      -----------------
+vault secrets enable -version=2 -path=secrets kv
+
+vault kv put secrets/services/payment/mysecret value=aabbcc
+vault kv put secrets/providers/slack token=ddeeff
+vault kv put secrets/providers/github token=gghhii
+vault kv put secrets/gcp/gke/production/payment/deploy_sa token='{}'
+vault kv put secrets/services/user/his value=xxyyzz
+
+vault kv list secrets/services
+
+
+# ----------------     Create Policy      -----------------
+vault policy list
+
+vault policy write payment-deploy-policy -<<EOF
+# This allows the user to read "secrets/services/payment/stripe"
+# with a parameter named "token" and can contain any value.
+path "secrets/services/payment/mysecret" {
+  capabilities = [ "read" ]
+}
+path "secrets/gcp/gke/production/payment/deploy_sa" {
+  capabilities = [ "read" ]
+}
+EOF
+vault policy read payment-deploy-policy
+
+
+
+vault policy write cicd-policy -<<EOF
+path "secrets/providers/slack" {
+  capabilities = [ "read" ]
+}
+path "secrets/providers/github" {
+  capabilities = [ "read" ]
+}
+EOF
+vault policy read cicd-policy
+
+vault policy list
+
+
+
+# ----------------     Create another file to write a role for JWT auth. payment-deploy-role.json      -----------------
+
+tee payment-deploy-role.json <<EOF
+{
+  "role_type": "jwt",
+  "token_ttl": 3600,
+  "token_max_ttl": 3600,
+  "token_explicit_max_ttl": 3600,
+  "token_policies": [ "cicd-policy", "payment-deploy-policy" ],
+  "policies": [ "cicd-policy", "payment-deploy-policy" ],
+  "user_claim": "sub",
+  "bound_claims": {
+    "service_name": "payment",
+    "branch": "main"
+  }
+}
+EOF
+
+cat payment-deploy-role.json | vault write auth/jwt/role/payment-deploy-role -
+
+
+
+# ----------------     Generate the RS256 key (Don’t enter the passphrase)      -----------------
+
+ssh-keygen -t rsa -b 2048 -m PEM -f jwtRS256.key
+
+openssl rsa -in jwtRS256.key -pubout -outform PEM -out jwtRS256.key.pub
+
+ ll
+-rw-r--r-- 1 Captain 197121 3243 Jan 12 10:11 jwtRS256.key
+-rw-r--r-- 1 Captain 197121  800 Jan 12 10:11 jwtRS256.key.pub
+
+
+# ----------------     Now, we should introduce the public (jwtRS256.key.pub) key to the Vault JWT config:      -----------------
+
+vault write auth/jwt/config jwt_supported_algs=RS256 jwt_validation_pubkeys=@jwtRS256.key.pub
+
+# Info :
+  #* exactly one of  'jwt_validation_pubkeys', 
+  #                  'jwks_url'
+  #                  'oidc_discovery_url' must be set
+
+
+
+# ----------------     Create a specific JWT for the payment service      -----------------
+Ref : https://dinochiesa.github.io/jwt/
+	: https://jwt.io/
+  : http://jwtbuilder.jamiekurtz.com/
+  : https://timestamp.online/
+
+{
+  "iss": "avengers.mcu.com",
+  "sub": "job_001",
+  "aud": "vault",
+  "iat": 1620515613,
+  "exp": 1705773288,
+  "service_name": "payment",
+  "branch": "main",
+  "name": "Rahul Kinge",
+  "user_id": "G01254668",
+  "user_login": "Captain",
+  "user_email": "captain_america@mcu.com"
+}
+
+
+
+# ----------------     Get a short-lived token from the Vault.      -----------------
+
+export VAULT_TOKEN=$(vault write -field=token auth/jwt/login role=payment-deploy-role jwt=eyJhbGciOiJSUzI1NiIsInByb3BYIjpmYWxzZX0.eyJpc3MiOiJhdmVuZ2Vycy5tY3UuY29tIiwic3ViIjoiam9iXzAwMSIsImF1ZCI6InZhdWx0IiwiaWF0IjoxNjIwNTE1NjEzLCJleHAiOjE2NTIwNDQ0MTMsInNlcnZpY2VfbmFtZSI6InBheW1lbnQiLCJicmFuY2giOiJtYWluIiwibmFtZSI6IlJhaHVsIEtpbmdlIiwidXNlcl9pZCI6IkcwMTI1NDY2OCIsInVzZXJfbG9naW4iOiJDYXB0YWluIiwidXNlcl9lbWFpbCI6ImNhcHRhaW5fYW1lcmljYUBtY3UuY29tIn0.npYW1nl6rvCcAL9f538UgxR4DOvEHf2g49SM1G_m8fxUSWEYfbH6rSzzMNG9ruV_ayVIxecQO7nAwyRUPf6S3ycJdP5d-eBOUKqihYPvr2zTmF28stnzSbIVwhq04MYKrrhrEGkyTVovj38fXV6q4HI3EQYhIXDvqwxWZMQZcxcakW-WiSfyTklDDG2W3CZcAwwo9Od1Y7uwPqOIq_bFwwiLHsvjUKdlO2F0U5XKnlQhBbWZNt0uF4y82MHGS8lDu33oXBpRgXQunvAvNoOxRsuZggXpVJZcAEUvhtlnYSxnY6K_2qbnjlEmKzBLOuVPg1TW99G3pOEx1Pl6ToE67Q)
+
+
+vault write auth/jwt/login role=payment-deploy-role jwt=
+vault write -field=token auth/jwt/login role=payment-deploy-role jwt=eyJhbGciOiJSUzI1NiIsInByb3BYIjpmYWxzZX0.eyJpc3MiOiJhdmVuZ2Vycy5tY3UuY29tIiwic3ViIjoiam9iXzAwMSIsImF1ZCI6InZhdWx0IiwiaWF0IjoxNjIwNTE1NjEzLCJleHAiOjE2NTIwNDQ0MTMsInNlcnZpY2VfbmFtZSI6InBheW1lbnQiLCJicmFuY2giOiJtYWluIn0.AjheSa9_f3T-Azcql02KABFb1qJmNgPE72gq85kM1Ea1YVZZ_ltyHPFSJ-ekAZxPYjMyp36SpE6yqg4l7Zkfoll3ZVYQKfxJ7imudrwBWKiEBLiC1iiNAUwNNpkUH1DS_dGsTWFiA2ggNs6tGPvPXxU2j3miewwvBKZa_zf3kMHxeQNo4xqMtyTpJ0gpBzpkTCfDqDDCKeK5cf82fOUUsLh4B2zosGwtJ_Iaj7zAzIVU1JPerts5jGSWshtZmby5yuaszXH0-GnGSaaUux7ejtql9hZgDnajgZEi3c9693HiahIypsp8Nbiw7dGv5LqfB6nBF1MRfPMmezwcS9WS-Q
+
+
+
+
+
+
+
+
+
+
+
+# ----------------      Attempt #2      -----------------
+
+vault auth disable jwt
+
+# Enable jwt authentication by using the following command in a terminal/command prompt:
+vault auth enable jwt
+
+
+# Generate Private key using openssl. Type in the following command:
+# keep passphrase as --> root
+openssl genrsa -aes256 -out private_key.pem 2048    
+openssl rsa -pubout -in private_key.pem -out public_key.pem
+vault write auth/jwt/config default_role="demo" jwt_validation_pubkeys=@public_key.pem
+
+# or
+
+openssl genrsa -out private.pem 2048
+openssl rsa -in private.pem -outform PEM -pubout -out pubkey.pem
+vault write auth/jwt/config jwt_validation_pubkeys=@pubkey.pem
+
+
+# Create the named role in step 4:
+vault write auth/jwt/role/demo \
+  role_type=jwt \
+  bound_subject="jwt subject" \
+  user_claim="some claim" \
+  policies=cicd-policy \
+  ttl=1h
+
+
+Get JWT from : https://dinochiesa.github.io/jwt/
+{
+    "sub" : "jwt subject",
+    "iat" : 1605166067,
+    "nbf": 1605166068,
+    "exp": 1605266067,
+    "some claim": "some claim"
+}
+
+vault write auth/jwt/login role=demo jwt=
+
+vault write auth/jwt/login role=demo jwt=eyJhbGciOiJSUzI1NiIsInByb3BYIjpmYWxzZX0.eyJzdWIiOiJqd3Qgc3ViamVjdCIsImlhdCI6MTYwNTE2NjA2NywibmJmIjoxNjA1MTY2MDY4LCJleHAiOjE2MDUyNjYwNjcsInNvbWUgY2xhaW0iOiJzb21lIGNsYWltIn0.Nhx4tbS13Vv7DpryosKa9aQHubxzgaa5es7FQu3JbWRxEFuo2vnhw_5dqZ0aGlEARYFIpaVd89pu_mtCfjn_E_rSghFISoLXgT7h775jkPN1AKOPwlRfYKb5tCD-c8RMYn0pkThW-vzQlR-Avxx9XdV9t5DwlpyF_BFIT8CprOyqFWt1QuSWSV7OV5rrDwQGe4BcCg92lWjTI8n8MSWU0J3mCJo6FB_CtmeIc-Vi1rCP1nEUtxNPjdAieUjqvcwUp_skJ_ioqYVq7P2HdW01KamPK3bFJtpbLL2PUXLGrrMrIwB_sh3m2K6kDZZIKHag3ZS7VMKzXm8JI9m16VEUUQ
+
+

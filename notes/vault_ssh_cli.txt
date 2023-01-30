@@ -1,0 +1,200 @@
+
+------------------------------------   Set Proxy  -------------------------------------------------------------------
+  echo "proxy=http://10.0.0.106:8080" >> /etc/yum.conf 
+  export http_proxy=http://10.0.0.106:8080
+  export https_proxy=http://10.0.0.106:8080
+
+
+------------------------------------   Vault Installation -------------------------------------------------------------------
+Ref : https://learn.hashicorp.com/tutorials/vault/getting-started-install?in=vault/getting-started
+
+sudo yum update -y
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+sudo yum -y install vault
+
+------------------------------------   Starting the Vault Server -------------------------------------------------------------------
+
+Ref : https://learn.hashicorp.com/tutorials/vault/getting-started-deploy
+
+mkdir -p -m755 /home/ec2-user/vault-data/
+mkdir -p -m755 /home/ec2-user/logs/
+
+vi config.hcl and update IP
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+export LOG_FILE=$DIR/logs/vault.log
+nohup /usr/bin/vault server -config=$DIR/config.hcl > $LOG_FILE 2>&1 &
+
+vault operator init
+  Output :
+    Unseal Key 1: Np+frcvuk+CjcMSz1UtW9aZT/qedFrHlOQ3CaQxof7q8
+    Unseal Key 2: BGD6DtAxB1sNh/7F4N6MexVlOTJmyKC5p42RtwwXzkKF
+    Unseal Key 3: r0ZRW7g55T+LyDQ0JjXNjjkq8SOkKLAa09hUAL9iHr5+
+    Unseal Key 4: tp4j01DrBBi8kcFlgZojkljfXouQvP1f8S4UCPgnhSRL
+    Unseal Key 5: CN4dhai3hDD77wFzonqJF12gtfoRyeOTpndG8xcOcTZg
+
+    Initial Root Token: s.jX2zwIdh8aJUEnLHUQht6yRi
+
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+export VAULT_TOKEN='s.jX2zwIdh8aJUEnLHUQht6yRi'
+
+
+vault operator unseal   :   x3 times
+
+---------------------------------------------   Install VNC  -------------------------------------------------------------------
+
+Ref : https://aws.amazon.com/premiumsupport/knowledge-center/ec2-linux-2-install-gui/
+
+sudo yum update -y
+
+Install the MATE desktop environment :
+  sudo amazon-linux-extras install mate-desktop1.x -y
+  sudo bash -c 'echo PREFERRED=/usr/bin/mate-session > /etc/sysconfig/desktop'
+
+Install TigerVNC :
+  sudo yum install tigervnc-server -y
+  vncpasswd
+      When asked if you want to enter a view-only password, press "n".
+
+  sudo reboot
+
+  vncserver :1
+
+To always start the VNC Server at boot time :
+  sudo cp /lib/systemd/system/vncserver@.service /etc/systemd/system/vncserver@.service
+  sudo sed -i 's/<USER>/ec2-user/' /etc/systemd/system/vncserver@.service
+  sudo systemctl daemon-reload
+  sudo systemctl enable vncserver@:1
+  sudo systemctl start vncserver@:1
+
+  sudo reboot
+
+---------------------------------------------   VNC Viewer  -------------------------------------------------------------------
+
+from personal laptop :
+
+  Connect to the GUI using the VNC :
+    ssh -L 5901:localhost:5901 -i PEM_FILE ec2-user@INSTANCE_IP
+    or 
+    ssh -L 5901:localhost:5901 -i Agent-key.pem ec2-user@54.194.154.117
+
+  Open VNC Viewer and type 
+    localhost:5901
+
+sudo amazon-linux-extras install epel -y
+sudo yum install chromium -y
+
+
+---------------------------------------------   Vault SSH CLI  -------------------------------------------------------------------
+
+Ref : https://www.vaultproject.io/docs/secrets/ssh/signed-ssh-certificates
+
+echo -e "\n ***---- Setting Proxy ----*** \n"
+cd /home/ec2-user/rahul/packer
+export http_proxy=http://10.0.0.106:8080
+export https_proxy=http://10.0.0.106:8080
+echo $http_proxy
+echo $https_proxy
+ll
+
+
+---------------------     Enable Vault SSH      ------------------------
+
+vault secrets enable -path=ssh-client-signer ssh
+	Success! Enabled the ssh secrets engine at: ssh-client-signer/
+
+
+
+---------------------     CA Information      ------------------------
+
+vault write ssh-client-signer/config/ca generate_signing_key=true
+	Key           Value
+	---           -----
+	public_key    ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDMxGtz5A0dMj9VomzRjmuIKNDhbxVJ7nUAd/n8vNoQJW0OslIbVPK2vfHcv760lSS1DXgUvRrVN4/vX5WqU8Ff4qw5NEaDdNJaMJUzVYOYKxz1xEmhuFCJvRtmCaeBgVrKSrCTQgXafx+5ddxYGCDhm2u0NkwgmMVDfHw1eZ6BlUwXHnH6/hhaaSpexHuRLOhDZS9tq2TIq4n9vjeLoFGXQqWI+6VGAWUgYqn4uPzhAYzh4e6RohVtFIuZx4gH1DIx/mEsvxWFuzQ47oICmUPVHj+JRz7dsawM9NrQcN1gNl8URNSYBiGEU4JdCAuH4la+soVQBlQ2+D3xC6jTn0p+lCG/ZpJ3RwwIfmXkE0Snp6m/1L18tkVn6Rhs+vrxhSFXefWORiZ9y9+o3ollKvX3CwV4aEZYjUdy3hAZ/Dv8/tR96JwpUho+tRK+BH+XERE5yatqt54l5Mc8GbnBS7YFQO/o524gGtDZPW3TAQnZ9KTwlOxXuz3kO9sfIqwxd/X8ShiNNjegyq4+1Kz5FsSe/5RlUaaqCvBQZt3dFb5vRh+GmXbaMRlbenPZeA1glS+1R/aDPKbj2Kx4hlGyGEwDpmJJkb90qJxBkGyAeaC1ZlQmH1PLotJWtV4sAjfnotVBOg13QKD7YeFE9eEulc4lFhyTVhWUCwoILOBTwcn6rQ==
+
+
+
+---------------------     Create trusted-user-ca-keys.pem      ------------------------
+
+curl http://127.0.0.1:8200/v1/ssh-client-signer/public_key -o /etc/ssh/trusted-user-ca-keys.pem
+
+sudo vi /etc/ssh/sshd_config
+  Add below entry :
+    TrustedUserCAKeys /etc/ssh/trusted-user-ca-keys.pem
+
+sudo systemctl status sshd
+sudo systemctl stop sshd
+sudo systemctl start sshd
+sudo systemctl status sshd
+
+---------------------     Create Role for User      ------------------------
+
+vault write ssh-client-signer/roles/ec2-user-role -<<"EOH"
+{
+  "algorithm_signer": "rsa-sha2-256",
+  "allow_user_certificates": true,
+  "allowed_users": "ec2-user",
+  "allowed_extensions": "permit-pty,permit-port-forwarding",
+  "default_extensions": [
+    {
+	    "permit-pty": "",
+	    "permit-port-forwarding": "",
+	    "permit-X11-forwarding": "",
+	    "permit-agent-forwarding": ""
+    }
+  ],
+  "key_type": "ca",
+  "default_user": "ec2-user",
+  "ttl": "30m0s"
+}
+EOH
+
+
+---------------------     Sign SSH Key      ------------------------
+
+vault write -field=signed_key ssh-client-signer/sign/ec2-user-role public_key=@/home/ec2-user/id_rsa_mobax.pub > vault_ssh_signed_cert.pub
+or 
+vault write ssh-client-signer/sign/ec2-user-role -<<"EOH"
+{
+  "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCdgC9bujBV9bQt4leP86hZjLn1+SIU8Sd9PBahxml6a5cZnB8cdLAVFSAb7PUfV5GVTRMWRQnaSY3+85sJrIZTfAFeZ4XWxURcy07iFvDNI566RBJ2oawPpx9m9tDPj+Z8iu5OZQCulM01Qg+weynXji5xsEyXlQWYsHKNDRjrbjwpaJ9Mo7WNhv8Zt/rX87J7rgaO7r2fEI+UdgFWC+JEB09ZRj6EiG/tmnt3PmdrRqxNtvdWUmysQuRalhdJxEYNrh3enFVq1JigdIB8cce4jERe3PFTBXs/DD4ZPBvKsbnxENuPenE/b/QV1DrCBNWwF+8t6BmIRDtrXVjKoqQ9 captain@DESKTOP-7RVR8GT",
+  "valid_principals": "ec2-user",
+  "extensions": {
+    "permit-pty": ""
+  }
+}
+EOH
+
+---------------------     Login Using Signed Key       ------------------------
+
+View enabled extensions, principals, and metadata of the signed key.
+  ssh-keygen -Lf vault_ssh_signed_cert.pub
+
+
+Vault SSH :
+  ssh -i vault_ssh_signed_cert.pub -i id_rsa ec2-user@3.250.115.188
+
+PKI Jumpbox :
+  ssh -i vault_ssh_signed_cert.pub -i id_rsa ec2-user@34.249.17.3
+
+Rubrik VMWare Jumpbox :
+  ssh -i vault_ssh_signed_cert.pub -i id_rsa ec2-user@52.208.68.37
+
+
+---------------------      ---------------        ------------------------
+
+
+ssh-keygen -f rahul-key
+vault write -field=signed_key ssh-client-signer/sign/ec2-user-role public_key=@/home/ec2-user/rahul-key.pub > vault_ssh_signed_cert_rahul.pub
+ssh -i vault_ssh_signed_cert_rahul.pub -i rahul-key ec2-user@10.0.0.106
+
+
+On 10.0.0.106 :
+sudo systemctl -l status sshd
+Output : 
+  Accepted publickey for ec2-user from 10.0.0.84 port 33218 ssh2: RSA-CERT ID vault-root-e6711b4a38c634b28dabba57324ee9d98959cf4757c10162f3dbd071bfb10293 (serial 1550200642482813702) CA RSA SHA256:cZfC13+hB5sJd7H+RrU2NHad4Ny918l2U3AYEZJajY4
+
+
+
+---------------------      ---------------        ------------------------

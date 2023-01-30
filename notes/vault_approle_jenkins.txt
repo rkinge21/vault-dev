@@ -1,0 +1,211 @@
+!!! ---------------------------------------------  DEV Mode ---------------------------------------------!!!
+cd /e/Tutorials/Vault/VaultWork/dev/
+Create 2 directories :
+  mkdir vault-data
+  mkdir logs
+  
+cd /e/Tutorials/Vault/VaultWork/dev/
+>vault_audit_raw.log
+>logs/vault.log
+
+export VAULT_ADDR=http://127.0.0.1:8200
+export VAULT_TOKEN="root"
+export LOG_FILE='/e/Tutorials/Vault/VaultWork/dev/logs/vault.log'
+nohup vault server -dev -dev-root-token-id root > $LOG_FILE 2>&1 &
+
+sleep 5
+cat logs/vault.log
+
+vault operator unseal 
+vault status
+
+
+Cross-Chek :
+   curl -k -s --head $VAULT_ADDR/v1/sys/health
+   curl -s -H "X-Vault-Token: $VAULT_TOKEN" --request GET  $VAULT_ADDR/v1/sys/host-info | jq -r .
+   or
+   http://127.0.0.1:8200/ui/
+   or 
+   vault status
+
+Kill Process :
+  ps -ef | grep vault
+  kill -9 692
+
+
+!!! ---------------------------------------------  Enabling/Disabling Audit ---------------------------------------------!!!
+
+
+vault audit enable file file_path=/e/Tutorials/Vault/VaultWork/dev/vault_audit.log
+# or
+vault audit enable file -path="file_raw" log_raw=true file_path=/e/Tutorials/Vault/VaultWork/dev/vault_audit_raw.log
+
+
+
+
+
+!!! ---------------------------------------------  Auth methods - AppRole - Explained ---------------------------------------------!!!
+
+vault auth list
+vault secrets list
+
+# ----------------     Create KV secrets      -----------------
+# before enabling auth method --> approle, let's create KV secrets and policiy first 
+vault kv put secret/mysql/webapp db_name="users" username="Iron" password="Man"
+vault kv get secret/mysql/webapp
+
+
+# ----------------     Create Policy      -----------------
+vault policy list
+
+vault policy write jenkins-policy -<<EOF
+# Read-only permission on secrets stored at 'secret/data/mysql/webapp'
+path "secret/data/mysql/webapp" {
+  capabilities = [ "read" ]
+}
+EOF
+vault policy read jenkins-policy
+
+
+# ----------------     Create AppRole      -----------------
+vault auth enable approle
+
+vault write auth/approle/role/jenkins-role \
+    token_ttl=60m \
+    token_policies="jenkins-policy"
+
+# vault write auth/approle/role/jenkins-role token_policies="jenkins-policy"  token_ttl=1h  token_max_ttl=2h  secret_id_num_uses=2
+  # Note: To attach multiple policies,  token_policies="jenkins-policy,anotherpolicy".
+
+
+# ----------------     Read AppRole      -----------------
+vault read auth/approle/role/jenkins-role
+
+
+export VAULT_TOKEN="root"
+vault read auth/approle/role/jenkins-role/role-id             #  like username - fixed
+vault write -force auth/approle/role/jenkins-role/secret-id   #  like password - generate a new value every time you request it.
+
+
+vault write auth/approle/login role_id="9c7507c7-b246-219f-1e25-a388e8926eb8" secret_id="5f499517-44df-6532-9397-1fa68018ebf9"
+export VAULT_TOKEN="hvs.CAESIAeksGXWZugv-EosIY8QepRIDVGKAscqOgTqw0s4RsIVGh4KHGh2cy5BT2hXMXJoZExOMG1QbmZEa1Y5MldmWm0"
+vault token lookup
+
+# or
+
+curl -k --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request POST \
+    --data '{"role_id":"","secret_id":""}' \
+    $VAULT_ADDR/v1/auth/approle/login | jq -r .
+
+
+export VAULT_TOKEN=""
+vault token lookup
+
+
+vault kv get secret/mysql/webapp
+  # Success
+
+vault kv delete secret/mysql/webapp
+  # Error deleting secret/data/mysql/webapp: Error making API request.
+  # URL: DELETE http://127.0.0.1:8200/v1/secret/data/mysql/webapp
+  # Code: 403. Errors:
+  # * 1 error occurred:
+  #         * permission denied
+
+vault kv put secret/mysql/webapp db_name="users1"
+  # Error writing data to secret/data/mysql/webapp: Error making API request.
+  # URL: PUT http://127.0.0.1:8200/v1/secret/data/mysql/webapp
+  # Code: 403. Errors:
+  # * 1 error occurred:
+  #         * permission denied
+
+
+
+
+
+
+
+
+
+
+!!! ---------------------------------------------  Auth methods - AppRole - Jenkins ---------------------------------------------!!!
+
+Ref : https://codeburst.io/read-vaults-secrets-from-jenkin-s-declarative-pipeline-50a690659d6
+
+# ----------------     Enable AppRole      -----------------
+vault auth enable approle
+
+
+# ----------------     Create jenkins Policy      -----------------
+vault policy write jenkins-policy -<<EOF
+# Read-only permission on secrets stored at 'secret/data/mysql/webapp'
+path "secret/data/jenkins/*" {
+  capabilities = [ "read" ]
+}
+EOF
+vault policy read jenkins-policy
+
+
+
+# ----------------     Create AppRole - jenkins      -----------------
+vault write auth/approle/role/jenkins token_ttl=1h token_max_ttl=4h token_policies="jenkins-policy"
+
+
+# ----------------     Get RoleID and SecretID      -----------------
+vault read auth/approle/role/jenkins/role-id
+vault write -f auth/approle/role/jenkins/secret-id
+
+
+# ----------------     Create KV Secret for Github      -----------------
+tee github.json <<EOF
+{
+  "private-token": "76358746321876543",
+  "public-token": "jhflkweb8y7432",
+  "api-key": "80493286nfbds43"
+}
+EOF
+vault kv put secret/jenkins/github @github.json
+
+
+
+# ----------------     Create KV secrets      -----------------
+vault kv put secret/jenkins/webapp db_name="users" username="Iron" password="Man"
+vault kv get secret/jenkins/webapp
+
+
+
+
+Jenkinsfile : 
+
+    def secrets = [
+      [path: 'secret/jenkins/webapp', engineVersion: 2, secretValues: [
+        [Var: 'DB_NAME', vaultKey: 'db_name'],
+        [envVar: 'DB_USERNAME', vaultKey: 'username'],
+        [envVar: 'DB_PASSWORD', vaultKey: 'password']]],
+    ]
+    def configuration = [vaultUrl: 'http://127.0.0.1:8200',  vaultCredentialId: 'vault-approle', engineVersion: 2]
+                          
+    pipeline {
+        agent any
+        options {
+            buildDiscarder(logRotator(numToKeepStr: '20'))
+            disableConcurrentBuilds()
+        }
+        stages{   
+          stage('Vault') {
+            steps {
+              withVault([configuration: configuration, vaultSecrets: secrets]) {
+                echo "This is a DB Name  : ${DB_NAME}"
+                script {
+                    if (DB_NAME == 'users') {
+                        echo 'DB name matched'
+                    } else {
+                        echo 'DB name is different'
+                    }
+                }
+              }
+            }  
+          }
+        }
+    }

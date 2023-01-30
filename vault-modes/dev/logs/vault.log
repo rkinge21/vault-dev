@@ -1,0 +1,88 @@
+nohup: ignoring input
+==> Vault server configuration:
+
+             Api Address: http://127.0.0.1:8200
+                     Cgo: disabled
+         Cluster Address: https://127.0.0.1:8201
+              Go Version: go1.17.12
+              Listener 1: tcp (addr: "127.0.0.1:8200", cluster address: "127.0.0.1:8201", max_request_duration: "1m30s", max_request_size: "33554432", tls: "disabled")
+               Log Level: info
+                   Mlock: supported: false, enabled: false
+           Recovery Mode: false
+                 Storage: inmem
+                 Version: Vault v1.11.1, built 2022-07-19T20:16:47Z
+             Version Sha: 0f634755745f4adf62ec0723a0b93d6dce5bc33e
+
+==> Vault server started! Log data will stream in below:
+
+2023-01-16T18:40:46.918+0530 [INFO]  proxy environment: http_proxy="" https_proxy="" no_proxy=""
+2023-01-16T18:40:46.922+0530 [WARN]  no `api_addr` value specified in config or in VAULT_API_ADDR; falling back to detection if possible, but this value should be manually set
+2023-01-16T18:40:46.931+0530 [INFO]  core: Initializing version history cache for core
+2023-01-16T18:40:46.936+0530 [INFO]  core: security barrier not initialized
+2023-01-16T18:40:46.938+0530 [INFO]  core: security barrier initialized: stored=1 shares=1 threshold=1
+2023-01-16T18:40:46.947+0530 [INFO]  core: post-unseal setup starting
+2023-01-16T18:40:46.947+0530 [INFO]  core: loaded wrapping token key
+2023-01-16T18:40:46.947+0530 [INFO]  core: Recorded vault version: vault version=1.11.1 upgrade time="2023-01-16 13:10:46.94753 +0000 UTC" build date=2022-07-19T20:16:47Z
+2023-01-16T18:40:46.947+0530 [INFO]  core: successfully setup plugin catalog: plugin-directory=""
+2023-01-16T18:40:46.947+0530 [INFO]  core: no mounts; adding default mount table
+2023-01-16T18:40:46.957+0530 [INFO]  core: successfully mounted backend: type=cubbyhole path=cubbyhole/
+2023-01-16T18:40:46.961+0530 [INFO]  core: successfully mounted backend: type=system path=sys/
+2023-01-16T18:40:46.968+0530 [INFO]  core: successfully mounted backend: type=identity path=identity/
+2023-01-16T18:40:46.979+0530 [INFO]  core: successfully enabled credential backend: type=token path=token/ namespace="ID: root. Path: "
+2023-01-16T18:40:46.979+0530 [INFO]  rollback: starting rollback manager
+2023-01-16T18:40:46.979+0530 [INFO]  core: restoring leases
+2023-01-16T18:40:46.979+0530 [INFO]  identity: entities restored
+2023-01-16T18:40:46.979+0530 [INFO]  identity: groups restored
+2023-01-16T18:40:46.979+0530 [INFO]  expiration: lease restore complete
+2023-01-16T18:40:47.523+0530 [INFO]  core: post-unseal setup complete
+2023-01-16T18:40:47.528+0530 [INFO]  core: root token generated
+2023-01-16T18:40:47.528+0530 [INFO]  core: pre-seal teardown starting
+2023-01-16T18:40:47.528+0530 [INFO]  rollback: stopping rollback manager
+2023-01-16T18:40:47.528+0530 [INFO]  core: pre-seal teardown complete
+2023-01-16T18:40:47.528+0530 [INFO]  core.cluster-listener.tcp: starting listener: listener_address=127.0.0.1:8201
+2023-01-16T18:40:47.528+0530 [INFO]  core.cluster-listener: serving cluster requests: cluster_listen_address=127.0.0.1:8201
+2023-01-16T18:40:47.532+0530 [INFO]  core: post-unseal setup starting
+2023-01-16T18:40:47.533+0530 [INFO]  core: loaded wrapping token key
+2023-01-16T18:40:47.533+0530 [INFO]  core: successfully setup plugin catalog: plugin-directory=""
+2023-01-16T18:40:47.533+0530 [INFO]  core: successfully mounted backend: type=system path=sys/
+2023-01-16T18:40:47.533+0530 [INFO]  core: successfully mounted backend: type=identity path=identity/
+2023-01-16T18:40:47.533+0530 [INFO]  core: successfully mounted backend: type=cubbyhole path=cubbyhole/
+2023-01-16T18:40:47.533+0530 [INFO]  core: successfully enabled credential backend: type=token path=token/ namespace="ID: root. Path: "
+2023-01-16T18:40:47.533+0530 [INFO]  rollback: starting rollback manager
+2023-01-16T18:40:47.533+0530 [INFO]  core: restoring leases
+2023-01-16T18:40:47.533+0530 [INFO]  identity: entities restored
+2023-01-16T18:40:47.533+0530 [INFO]  identity: groups restored
+2023-01-16T18:40:47.533+0530 [INFO]  core: post-unseal setup complete
+2023-01-16T18:40:47.533+0530 [INFO]  core: vault is unsealed
+2023-01-16T18:40:47.533+0530 [INFO]  expiration: lease restore complete
+2023-01-16T18:40:47.544+0530 [INFO]  expiration: revoked lease: lease_id=auth/token/root/h8cca08ef7b0d3da5aab3a8cd32005bff37def7aea3da434b64b923683a7abb57
+2023-01-16T18:40:47.554+0530 [INFO]  core: successful mount: namespace="" path=secret/ type=kv
+2023-01-16T18:40:47.576+0530 [INFO]  secrets.kv.kv_03efbcda: collecting keys to upgrade
+2023-01-16T18:40:47.576+0530 [INFO]  secrets.kv.kv_03efbcda: done collecting keys: num_keys=1
+2023-01-16T18:40:47.576+0530 [INFO]  secrets.kv.kv_03efbcda: upgrading keys finished
+WARNING! dev mode is enabled! In this mode, Vault runs entirely in-memory
+and starts unsealed with a single unseal key. The root token is already
+authenticated to the CLI, so you can immediately begin using Vault.
+
+You may need to set the following environment variable:
+
+PowerShell:
+    $env:VAULT_ADDR="http://127.0.0.1:8200"
+cmd.exe:
+    set VAULT_ADDR=http://127.0.0.1:8200
+
+The unseal key and root token are displayed below in case you want to
+seal/unseal the Vault or re-authenticate.
+
+Unseal Key: TskM5OcIK7L9q+2HTqQ8SYQsIQF1yv4FEln9hYR5Ygk=
+Root Token: root
+
+Development mode should NOT be used in production installations!
+
+2023-01-16T18:43:11.173+0530 [INFO]  core: enabled credential backend: path=jwt/ type=jwt
+2023-01-16T18:44:00.393+0530 [INFO]  core: successful mount: namespace="" path=secrets/ type=kv
+2023-01-16T18:44:00.419+0530 [INFO]  secrets.kv.kv_1f6b8fd1: collecting keys to upgrade
+2023-01-16T18:44:00.419+0530 [INFO]  secrets.kv.kv_1f6b8fd1: done collecting keys: num_keys=1
+2023-01-16T18:44:00.419+0530 [INFO]  secrets.kv.kv_1f6b8fd1: upgrading keys finished
+2023-01-16T20:05:58.952+0530 [INFO]  expiration: revoked lease: lease_id=auth/jwt/login/h81961779fec2d6b3d9825d952191ad25d83f9fdba8aa5a2d981afa4d826a61a2
+2023-01-16T20:06:12.627+0530 [INFO]  expiration: revoked lease: lease_id=auth/jwt/login/h42879fbdc7ca59154c1a0421aca9c613ebb7de842f6e5e19703e6e4f1d92e430

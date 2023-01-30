@@ -1,0 +1,19 @@
+{
+  "request_id": "619dee53-6ee4-a4be-8d6b-d604ad86a9db",
+  "lease_id": "",
+  "lease_duration": 0,
+  "renewable": false,
+  "data": {
+    "certificate": "-----BEGIN CERTIFICATE-----\nMIIDNTCCAh2gAwIBAgIUXLTEGUMcXFujHt4z3OhbigABwF0wDQYJKoZIhvcNAQEL\nBQAwFjEUMBIGA1UEAxMLcm9vdC1jYS5jb20wHhcNMjMwMTAzMTIxNzUyWhcNMzIx\nMjMxMTIxODIyWjAWMRQwEgYDVQQDEwtyb290LWNhLmNvbTCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAMyAmv3VE7ti5tf5Do4EgByzG/IRxPteY3MXWmhf\ndaHFWFPuOtq/UQpyzJr5Mp9lNdnMmiuxBuZonlc7M3zK5CYwJpP7q1T0vyIYrK07\nrqygpjkb+ANTLs+1LQ/2BlMxNfSNNVLscNohnnOWXFYLFRKojCupaVWIrAM4zDx9\nbGaCUS2VM2y9Vf+PBpsoYhsJQnvP8qhc7ZGBC6PUKaeOp8vRq1ielgwiO5zakLFj\nD9RHO04WKXrxDvAB+m09S8WqwT7Qyy/4VLge3hYnz/+gw29Ab3EbrQlpjC4Iv51C\nw6g/JTo63Vd+VjTi6a5Zfl7SjsXC9k3BnrPYn5080NHXDU8CAwEAAaN7MHkwDgYD\nVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFJCclixo8dym\n7UkYqt2/pM2L+cISMB8GA1UdIwQYMBaAFJCclixo8dym7UkYqt2/pM2L+cISMBYG\nA1UdEQQPMA2CC3Jvb3QtY2EuY29tMA0GCSqGSIb3DQEBCwUAA4IBAQBt+16iXNsI\nrHlnCG/ayhnxwgL0y6YLjUUCOEz5VwfTARqCnHGrhmVtoLci+GPuxPq/g/HbxTij\ngbFabmGLqYUi3ceiPrzQifVtNq25M6EDcD0i1/chs3RYhk9QcjEFOB/Hd2viohCi\n3qHRw4UZCRL6svYhGLZNFm4ruGk1VOMZydkIU6s4ku2Zx1qDHxnu9jEIi54HLgwe\nHPbFuuJveX8LWHQzH+4on5QMzkyPq4GVQ3wiBZ3PNVnloBy6r7E0BoOySkJr0Slk\nUv/rlYGkXey6Bz2D9zC/4sK5ky3SRFYXtqrc+IjW2SAb5lEovWCTC/BieFav2i7N\nmG0EHo43SXq5\n-----END CERTIFICATE-----",
+    "expiration": 1988108302,
+    "issuer_id": "24e73500-412f-d7c6-bd5f-c0243dd12a22",
+    "issuer_name": "Rahul-Kinge-Root-CA",
+    "issuing_ca": "-----BEGIN CERTIFICATE-----\nMIIDNTCCAh2gAwIBAgIUXLTEGUMcXFujHt4z3OhbigABwF0wDQYJKoZIhvcNAQEL\nBQAwFjEUMBIGA1UEAxMLcm9vdC1jYS5jb20wHhcNMjMwMTAzMTIxNzUyWhcNMzIx\nMjMxMTIxODIyWjAWMRQwEgYDVQQDEwtyb290LWNhLmNvbTCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAMyAmv3VE7ti5tf5Do4EgByzG/IRxPteY3MXWmhf\ndaHFWFPuOtq/UQpyzJr5Mp9lNdnMmiuxBuZonlc7M3zK5CYwJpP7q1T0vyIYrK07\nrqygpjkb+ANTLs+1LQ/2BlMxNfSNNVLscNohnnOWXFYLFRKojCupaVWIrAM4zDx9\nbGaCUS2VM2y9Vf+PBpsoYhsJQnvP8qhc7ZGBC6PUKaeOp8vRq1ielgwiO5zakLFj\nD9RHO04WKXrxDvAB+m09S8WqwT7Qyy/4VLge3hYnz/+gw29Ab3EbrQlpjC4Iv51C\nw6g/JTo63Vd+VjTi6a5Zfl7SjsXC9k3BnrPYn5080NHXDU8CAwEAAaN7MHkwDgYD\nVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFJCclixo8dym\n7UkYqt2/pM2L+cISMB8GA1UdIwQYMBaAFJCclixo8dym7UkYqt2/pM2L+cISMBYG\nA1UdEQQPMA2CC3Jvb3QtY2EuY29tMA0GCSqGSIb3DQEBCwUAA4IBAQBt+16iXNsI\nrHlnCG/ayhnxwgL0y6YLjUUCOEz5VwfTARqCnHGrhmVtoLci+GPuxPq/g/HbxTij\ngbFabmGLqYUi3ceiPrzQifVtNq25M6EDcD0i1/chs3RYhk9QcjEFOB/Hd2viohCi\n3qHRw4UZCRL6svYhGLZNFm4ruGk1VOMZydkIU6s4ku2Zx1qDHxnu9jEIi54HLgwe\nHPbFuuJveX8LWHQzH+4on5QMzkyPq4GVQ3wiBZ3PNVnloBy6r7E0BoOySkJr0Slk\nUv/rlYGkXey6Bz2D9zC/4sK5ky3SRFYXtqrc+IjW2SAb5lEovWCTC/BieFav2i7N\nmG0EHo43SXq5\n-----END CERTIFICATE-----",
+    "key_id": "250fce68-11a8-8d56-8349-2df01b0f596f",
+    "key_name": "",
+    "serial_number": "5c:b4:c4:19:43:1c:5c:5b:a3:1e:de:33:dc:e8:5b:8a:00:01:c0:5d"
+  },
+  "warnings": [
+    "This mount hasn't configured any authority access information fields; this may make it harder for systems to find missing certificates in the chain or to validate revocation status of certificates. Consider updating /config/urls with this information."
+  ]
+}

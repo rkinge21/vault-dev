@@ -1,0 +1,147 @@
+nohup: ignoring input
+==> Vault server configuration:
+
+             Api Address: http://127.0.0.1:8200
+                     Cgo: disabled
+         Cluster Address: https://127.0.0.1:8201
+              Go Version: go1.17.12
+              Listener 1: tcp (addr: "127.0.0.1:8200", cluster address: "127.0.0.1:8201", max_request_duration: "1m30s", max_request_size: "33554432", tls: "disabled")
+               Log Level: trace
+                   Mlock: supported: false, enabled: false
+           Recovery Mode: false
+                 Storage: file
+                 Version: Vault v1.11.1, built 2022-07-19T20:16:47Z
+             Version Sha: 0f634755745f4adf62ec0723a0b93d6dce5bc33e
+
+==> Vault server started! Log data will stream in below:
+
+2023-01-02T06:28:39.865+0530 [INFO]  proxy environment: http_proxy="" https_proxy="" no_proxy=""
+2023-01-02T06:28:39.866+0530 [DEBUG] core: set config: sanitized config="{\"api_addr\":\"http://127.0.0.1:8200\",\"cache_size\":0,\"cluster_addr\":\"http://127.0.0.1:8201\",\"cluster_cipher_suites\":\"\",\"cluster_name\":\"\",\"default_lease_ttl\":0,\"default_max_request_duration\":0,\"disable_cache\":false,\"disable_clustering\":false,\"disable_indexing\":false,\"disable_mlock\":true,\"disable_performance_standby\":false,\"disable_printable_check\":false,\"disable_sealwrap\":false,\"disable_sentinel_trace\":false,\"enable_response_header_hostname\":false,\"enable_response_header_raft_node_id\":false,\"enable_ui\":true,\"listeners\":[{\"config\":{\"address\":\"127.0.0.1:8200\",\"tls_disable\":\"true\"},\"type\":\"tcp\"}],\"log_format\":\"unspecified\",\"log_level\":\"TRACE\",\"log_requests_level\":\"\",\"max_lease_ttl\":0,\"pid_file\":\"\",\"plugin_directory\":\"\",\"plugin_file_permissions\":0,\"plugin_file_uid\":0,\"raw_storage_endpoint\":false,\"seals\":[{\"disabled\":false,\"type\":\"shamir\"}],\"storage\":{\"cluster_addr\":\"http://127.0.0.1:8201\",\"disable_clustering\":false,\"redirect_addr\":\"http://127.0.0.1:8200\",\"type\":\"file\"}}"
+2023-01-02T06:28:39.866+0530 [DEBUG] storage.cache: creating LRU cache: size=0
+2023-01-02T06:28:39.867+0530 [INFO]  core: Initializing version history cache for core
+2023-01-02T06:28:39.868+0530 [DEBUG] cluster listener addresses synthesized: cluster_addresses=[127.0.0.1:8201]
+2023-01-02T06:28:39.868+0530 [DEBUG] would have sent systemd notification (systemd not present): notification=READY=1
+2023-01-02T06:28:47.280+0530 [INFO]  core: security barrier not initialized
+2023-01-02T06:28:47.735+0530 [INFO]  core: security barrier not initialized
+2023-01-02T06:28:47.735+0530 [INFO]  core: security barrier not initialized
+2023-01-02T06:28:47.735+0530 [INFO]  core: seal configuration missing, not initialized
+2023-01-02T06:28:47.800+0530 [INFO]  core: security barrier not initialized
+2023-01-02T06:28:47.800+0530 [INFO]  core: security barrier not initialized
+2023-01-02T06:28:47.800+0530 [INFO]  core: seal configuration missing, not initialized
+2023-01-02T06:28:57.836+0530 [INFO]  core: security barrier not initialized
+2023-01-02T06:28:57.836+0530 [INFO]  core: security barrier not initialized
+2023-01-02T06:28:57.836+0530 [INFO]  core: seal configuration missing, not initialized
+2023-01-02T06:29:06.917+0530 [INFO]  core: security barrier not initialized
+2023-01-02T06:29:06.922+0530 [INFO]  core: security barrier initialized: stored=1 shares=5 threshold=3
+2023-01-02T06:29:06.928+0530 [DEBUG] core: cluster name not found/set, generating new
+2023-01-02T06:29:06.928+0530 [DEBUG] core: cluster name set: name=vault-cluster-a834b3a0
+2023-01-02T06:29:06.928+0530 [DEBUG] core: cluster ID not found, generating new
+2023-01-02T06:29:06.928+0530 [DEBUG] core: cluster ID set: id=6cb5c232-bd54-3983-8a0e-fa8fea11b8ac
+2023-01-02T06:29:06.931+0530 [INFO]  core: post-unseal setup starting
+2023-01-02T06:29:06.931+0530 [DEBUG] core: clearing forwarding clients
+2023-01-02T06:29:06.931+0530 [DEBUG] core: done clearing forwarding clients
+2023-01-02T06:29:06.931+0530 [DEBUG] core: persisting feature flags
+2023-01-02T06:29:06.938+0530 [INFO]  core: loaded wrapping token key
+2023-01-02T06:29:06.939+0530 [INFO]  core: Recorded vault version: vault version=1.11.1 upgrade time="2023-01-02 00:59:06.9380584 +0000 UTC" build date=2022-07-19T20:16:47Z
+2023-01-02T06:29:06.939+0530 [INFO]  core: successfully setup plugin catalog: plugin-directory=""
+2023-01-02T06:29:06.939+0530 [INFO]  core: no mounts; adding default mount table
+2023-01-02T06:29:06.942+0530 [INFO]  core: successfully mounted backend: type=cubbyhole path=cubbyhole/
+2023-01-02T06:29:06.942+0530 [INFO]  core: successfully mounted backend: type=system path=sys/
+2023-01-02T06:29:06.943+0530 [INFO]  core: successfully mounted backend: type=identity path=identity/
+2023-01-02T06:29:06.951+0530 [TRACE] token: no token generation counter found in storage
+2023-01-02T06:29:06.951+0530 [INFO]  core: successfully enabled credential backend: type=token path=token/ namespace="ID: root. Path: "
+2023-01-02T06:29:06.952+0530 [TRACE] expiration.job-manager: created dispatcher: name=expire-dispatcher num_workers=200
+2023-01-02T06:29:06.952+0530 [INFO]  rollback: starting rollback manager
+2023-01-02T06:29:06.952+0530 [TRACE] expiration.job-manager: initialized dispatcher: num_workers=200
+2023-01-02T06:29:06.952+0530 [TRACE] expiration.job-manager: created job manager: name=expire pool_size=200
+2023-01-02T06:29:06.952+0530 [TRACE] expiration.job-manager: starting job manager: name=expire
+2023-01-02T06:29:06.952+0530 [TRACE] expiration.job-manager: starting dispatcher
+2023-01-02T06:29:06.954+0530 [INFO]  core: restoring leases
+2023-01-02T06:29:06.954+0530 [DEBUG] expiration: collecting leases
+2023-01-02T06:29:06.954+0530 [DEBUG] expiration: leases collected: num_existing=0
+2023-01-02T06:29:06.954+0530 [INFO]  expiration: lease restore complete
+2023-01-02T06:29:06.957+0530 [DEBUG] identity: loading entities
+2023-01-02T06:29:06.957+0530 [DEBUG] identity: entities collected: num_existing=0
+2023-01-02T06:29:06.957+0530 [INFO]  identity: entities restored
+2023-01-02T06:29:06.957+0530 [DEBUG] identity: identity loading groups
+2023-01-02T06:29:06.957+0530 [DEBUG] identity: groups collected: num_existing=0
+2023-01-02T06:29:06.957+0530 [INFO]  identity: groups restored
+2023-01-02T06:29:06.957+0530 [DEBUG] identity: identity loading OIDC clients
+2023-01-02T06:29:06.958+0530 [TRACE] mfa: loading login MFA configurations
+2023-01-02T06:29:06.958+0530 [TRACE] mfa: methods collected: num_existing=0
+2023-01-02T06:29:06.958+0530 [TRACE] mfa: configurations restored: namespace="" prefix=login-mfa/method/
+2023-01-02T06:29:06.958+0530 [TRACE] mfa: loading login MFA enforcement configurations
+2023-01-02T06:29:06.958+0530 [TRACE] mfa: enforcements configs collected: num_existing=0
+2023-01-02T06:29:06.958+0530 [TRACE] mfa: enforcement configurations restored: namespace="" prefix=login-mfa/enforcement/
+2023-01-02T06:29:06.958+0530 [TRACE] activity: scanned existing logs: out=[]
+2023-01-02T06:29:06.959+0530 [INFO]  core: usage gauge collection is disabled
+2023-01-02T06:29:06.959+0530 [TRACE] activity: no intent log found
+2023-01-02T06:29:06.959+0530 [TRACE] activity: scanned existing logs: out=[]
+2023-01-02T06:29:06.962+0530 [DEBUG] secrets.identity.identity_122dbeba: wrote OIDC default provider
+2023-01-02T06:29:07.180+0530 [DEBUG] secrets.identity.identity_122dbeba: generated OIDC public key to sign JWTs: key_id=5970928d-8335-bfb6-7c3e-2321e3d726d6
+2023-01-02T06:29:07.441+0530 [DEBUG] secrets.identity.identity_122dbeba: generated OIDC public key for future use: key_id=598b50a4-1d9e-bb9b-86b1-e09cee8681ef
+2023-01-02T06:29:07.442+0530 [DEBUG] secrets.identity.identity_122dbeba: wrote OIDC default key
+2023-01-02T06:29:07.445+0530 [DEBUG] secrets.identity.identity_122dbeba: wrote OIDC allow_all assignment
+2023-01-02T06:29:07.446+0530 [INFO]  core: post-unseal setup complete
+2023-01-02T06:29:07.450+0530 [DEBUG] token: no wal state found when generating token
+2023-01-02T06:29:07.450+0530 [INFO]  core: root token generated
+2023-01-02T06:29:07.450+0530 [INFO]  core: pre-seal teardown starting
+2023-01-02T06:29:07.451+0530 [DEBUG] expiration: stop triggered
+2023-01-02T06:29:07.451+0530 [TRACE] expiration.job-manager: terminating job manager...
+2023-01-02T06:29:07.451+0530 [TRACE] expiration.job-manager: terminating dispatcher
+2023-01-02T06:29:07.451+0530 [DEBUG] expiration: finished stopping
+2023-01-02T06:29:07.451+0530 [INFO]  rollback: stopping rollback manager
+2023-01-02T06:29:07.451+0530 [INFO]  core: pre-seal teardown complete
+2023-01-02T06:30:00.502+0530 [DEBUG] core: unseal key supplied: migrate=false
+2023-01-02T06:30:00.502+0530 [DEBUG] core: cannot unseal, not enough keys: keys=1 threshold=3 nonce=8b5a9385-084f-009c-eace-5c0788719689
+2023-01-02T06:30:12.479+0530 [DEBUG] core: unseal key supplied: migrate=false
+2023-01-02T06:30:12.479+0530 [DEBUG] core: cannot unseal, not enough keys: keys=2 threshold=3 nonce=8b5a9385-084f-009c-eace-5c0788719689
+2023-01-02T06:30:29.514+0530 [DEBUG] core: unseal key supplied: migrate=false
+2023-01-02T06:30:29.515+0530 [DEBUG] core: starting cluster listeners
+2023-01-02T06:30:29.515+0530 [INFO]  core.cluster-listener.tcp: starting listener: listener_address=127.0.0.1:8201
+2023-01-02T06:30:29.515+0530 [INFO]  core.cluster-listener: serving cluster requests: cluster_listen_address=127.0.0.1:8201
+2023-01-02T06:30:29.515+0530 [INFO]  core: post-unseal setup starting
+2023-01-02T06:30:29.515+0530 [DEBUG] core: clearing forwarding clients
+2023-01-02T06:30:29.515+0530 [DEBUG] core: done clearing forwarding clients
+2023-01-02T06:30:29.516+0530 [DEBUG] core: persisting feature flags
+2023-01-02T06:30:29.518+0530 [INFO]  core: loaded wrapping token key
+2023-01-02T06:30:29.518+0530 [INFO]  core: successfully setup plugin catalog: plugin-directory=""
+2023-01-02T06:30:29.519+0530 [INFO]  core: successfully mounted backend: type=system path=sys/
+2023-01-02T06:30:29.520+0530 [INFO]  core: successfully mounted backend: type=identity path=identity/
+2023-01-02T06:30:29.520+0530 [INFO]  core: successfully mounted backend: type=cubbyhole path=cubbyhole/
+2023-01-02T06:30:29.522+0530 [TRACE] token: no token generation counter found in storage
+2023-01-02T06:30:29.522+0530 [INFO]  core: successfully enabled credential backend: type=token path=token/ namespace="ID: root. Path: "
+2023-01-02T06:30:29.523+0530 [TRACE] expiration.job-manager: created dispatcher: name=expire-dispatcher num_workers=200
+2023-01-02T06:30:29.523+0530 [INFO]  rollback: starting rollback manager
+2023-01-02T06:30:29.523+0530 [TRACE] expiration.job-manager: initialized dispatcher: num_workers=200
+2023-01-02T06:30:29.523+0530 [TRACE] expiration.job-manager: created job manager: name=expire pool_size=200
+2023-01-02T06:30:29.523+0530 [TRACE] expiration.job-manager: starting job manager: name=expire
+2023-01-02T06:30:29.523+0530 [TRACE] expiration.job-manager: starting dispatcher
+2023-01-02T06:30:29.523+0530 [INFO]  core: restoring leases
+2023-01-02T06:30:29.523+0530 [DEBUG] expiration: collecting leases
+2023-01-02T06:30:29.523+0530 [DEBUG] expiration: leases collected: num_existing=0
+2023-01-02T06:30:29.523+0530 [DEBUG] identity: loading entities
+2023-01-02T06:30:29.523+0530 [INFO]  expiration: lease restore complete
+2023-01-02T06:30:29.524+0530 [DEBUG] identity: entities collected: num_existing=0
+2023-01-02T06:30:29.524+0530 [INFO]  identity: entities restored
+2023-01-02T06:30:29.524+0530 [DEBUG] identity: identity loading groups
+2023-01-02T06:30:29.524+0530 [DEBUG] identity: groups collected: num_existing=0
+2023-01-02T06:30:29.524+0530 [INFO]  identity: groups restored
+2023-01-02T06:30:29.524+0530 [DEBUG] identity: identity loading OIDC clients
+2023-01-02T06:30:29.524+0530 [TRACE] mfa: loading login MFA configurations
+2023-01-02T06:30:29.524+0530 [TRACE] mfa: methods collected: num_existing=0
+2023-01-02T06:30:29.524+0530 [TRACE] mfa: configurations restored: namespace="" prefix=login-mfa/method/
+2023-01-02T06:30:29.524+0530 [TRACE] mfa: loading login MFA enforcement configurations
+2023-01-02T06:30:29.524+0530 [TRACE] mfa: enforcements configs collected: num_existing=0
+2023-01-02T06:30:29.524+0530 [TRACE] mfa: enforcement configurations restored: namespace="" prefix=login-mfa/enforcement/
+2023-01-02T06:30:29.525+0530 [TRACE] activity: scanned existing logs: out=[]
+2023-01-02T06:30:29.525+0530 [DEBUG] core: request forwarding setup function
+2023-01-02T06:30:29.525+0530 [DEBUG] core: clearing forwarding clients
+2023-01-02T06:30:29.525+0530 [DEBUG] core: done clearing forwarding clients
+2023-01-02T06:30:29.525+0530 [DEBUG] core: request forwarding not setup
+2023-01-02T06:30:29.525+0530 [DEBUG] core: leaving request forwarding setup function
+2023-01-02T06:30:29.525+0530 [INFO]  core: usage gauge collection is disabled
+2023-01-02T06:30:29.525+0530 [TRACE] activity: no intent log found
+2023-01-02T06:30:29.525+0530 [TRACE] activity: scanned existing logs: out=[]
+2023-01-02T06:30:29.527+0530 [INFO]  core: post-unseal setup complete
+2023-01-02T06:30:29.527+0530 [INFO]  core: vault is unsealed

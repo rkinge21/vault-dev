@@ -1,0 +1,158 @@
+
+!!! ---------------------------------------------  DEV Mode ---------------------------------------------!!!
+cd /e/Tutorials/Vault/VaultWork/dev/
+Create 2 directories :
+  mkdir vault-data
+  mkdir logs
+  
+cd /e/Tutorials/Vault/VaultWork/dev/
+>vault_audit_raw.log
+>logs/vault.log
+
+export VAULT_ADDR=http://127.0.0.1:8200
+export VAULT_TOKEN=root
+export LOG_FILE='/e/Tutorials/Vault/VaultWork/dev/logs/vault.log'
+nohup vault server -dev -dev-root-token-id root > $LOG_FILE 2>&1 &
+
+sleep 5
+cat logs/vault.log
+
+
+vault status
+vault operator unseal 
+vault status
+
+
+Cross-Chek :
+   curl -k -s --head $VAULT_ADDR/v1/sys/health
+   curl -s -H "X-Vault-Token: $VAULT_TOKEN" --request GET  $VAULT_ADDR/v1/sys/host-info | jq -r .
+   or
+   http://127.0.0.1:8200/ui/
+   or 
+   vault status
+
+Kill Process :
+  ps -ef | grep vault
+  kill -9 692
+
+
+
+!!! ---------------------------------------------  Create Role for PKI---------------------------------------------!!!
+
+vault write pki_int/roles/mcu-role \
+    allowed_domains="mcu.com" \
+    allow_subdomains=true \
+    allow_bare_domains=true \
+    allow_ip_sans=false \
+    allow_localhost=false \
+    client_flag=false \
+    country="IN" \
+    locality="Pune" \
+    street_address="Baner Road" \
+    enforce_hostnames=false \
+    organization="MARVEL ORG" \
+    ou="MARVEL OU" \
+    postal_code="411045" \
+    province="English, Hindi, Marathi" \
+    require_cn=false \
+    max_ttl="2m" \
+    ttl="1m"
+
+vault read pki_int/roles/mcu-role
+
+
+# Delete Role
+# vault delete pki_int/roles/$VAULT_ROLE_NAME
+
+
+!!! ---------------------------------------------  Generate / Issue Certificate ---------------------------------------------!!!
+
+cd /e/Tutorials/Vault/VaultWork/code/vault-agent/pki
+
+vault write -format=json pki_int/issue/mcu-role \
+    common_name="avengers.mcu.com" \
+    alt_names="ironman.mcu.com,captain.mcu.com"
+
+
+vault write -format=json pki_int/issue/mcu-role \
+    common_name="avengers.mcu.com" \
+    alt_names="ironman.mcu.com,captain.mcu.com"  > certs/avengers.mcu.com.json
+
+#extract the certificate, issuing ca in the pem file and private key in the key file seperately
+cat certs/avengers.mcu.com.json | jq -r .data.certificate > certs/avengers.mcu.com.crt
+cat certs/avengers.mcu.com.json | jq -r .data.issuing_ca >> certs/avengers.mcu.com.crt
+cat certs/avengers.mcu.com.json | jq -r .data.private_key > certs/avengers.mcu.com.key
+
+
+
+!!! ---------------------------------------------  Vault-Agent for PKI ---------------------------------------------!!!
+
+cd /e/Tutorials/Vault/VaultWork/code/vault-agent/pki
+
+# Create File :
+touch role_id_pki
+touch secret_id_pki
+
+
+# Cleanup :
+>role_id_pki
+>secret_id_pki
+
+
+echo -e "\n# ----------  Create access policy   ----------- #"
+
+vault policy fmt pki_int_policy.hcl
+vault policy write agent-policy-pki pki_int_policy.hcl
+vault policy list
+
+
+echo -e "\n# ----------  Configure AppRole auth method   ----------- #"
+vault auth enable approle
+vault write auth/approle/role/vaultagent-role-pki \
+    token_ttl=10m \
+    token_num_uses=10 \
+    secret_id_ttl=10m \
+    secret_id_num_uses=10 \
+    policies="agent-policy-pki"
+
+# or
+# vault write auth/approle/role/vaultagent-role-pki  token_policies="agent-policy-pki"
+
+
+
+echo -e "\n# ----------  Read Role   ----------- #"
+vault read auth/approle/role/vaultagent-role-pki
+
+echo -e "\n# ----------  Delete Role   ----------- #"
+# vault delete auth/approle/role/vaultagent-role-pki
+
+
+
+
+echo -e "\n# ----------  Get Vault Agent Role ID   ----------- #"
+export VAULTAGENT_ROLE_ID=$(vault read -format=json auth/approle/role/vaultagent-role-pki/role-id | jq -r .data.role_id)
+echo $VAULTAGENT_ROLE_ID | tee role_id_pki
+
+echo -e "\n# ----------  Get Vault Agent Secret ID   ----------- #"
+export VAULTAGENT_SECRET_ID=$(vault write -force -format=json auth/approle/role/vaultagent-role-pki/secret-id | jq -r .data.secret_id)
+echo $VAULTAGENT_SECRET_ID | tee secret_id_pki
+
+
+
+echo -e "\n# ----------  Test/Check Secret ID Error   ----------- #"
+# secret_id_ttl --> Code: 400. Errors: * invalid secret id
+vault write auth/approle/login  role_id=${VAULTAGENT_ROLE_ID}  secret_id=${VAULTAGENT_SECRET_ID}
+
+
+echo -e "\n# ----------  Test/Check Token Error   ----------- #"
+# token_ttl     --> Code: 403. Errors: * permission denied
+export VAULT_TOKEN="root"
+export VAULT_TOKEN=$(vault write -format=json auth/approle/login  role_id=${VAULTAGENT_ROLE_ID}  secret_id=${VAULTAGENT_SECRET_ID} | jq -r '.auth.client_token')
+vault token lookup
+
+
+
+echo -e "\n# ----------  Initiate Vault-Agent   ----------- #"
+
+vault agent -config=vaultagent-pki-config.hcl
+vault agent -log-level debug -config=vaultagent-pki-config.hcl

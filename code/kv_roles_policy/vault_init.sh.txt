@@ -1,0 +1,110 @@
+!!! ---------------------------------------------  DEV Mode ---------------------------------------------!!!
+cd /e/Tutorials/Vault/VaultWork/dev/
+Create 2 directories :
+	mkdir vault-data
+	mkdir logs
+	
+cd /e/Tutorials/Vault/VaultWork/dev/
+export VAULT_ADDR=http://127.0.0.1:8200
+export VAULT_TOKEN=root
+export LOG_FILE='/e/Tutorials/Vault/VaultWork/dev/logs/vault.log'
+nohup vault server -dev -dev-root-token-id root > $LOG_FILE 2>&1 &
+
+sleep 5
+cat logs/vault.log
+
+
+vault operator unseal 
+
+
+Cross-Chek :
+	 curl -k -s --head $VAULT_ADDR/v1/sys/health
+	 curl -s -H "X-Vault-Token: $VAULT_TOKEN" --request GET  $VAULT_ADDR/v1/sys/host-info | jq -r .
+	 or
+	 http://127.0.0.1:8200/ui/
+	 or 
+	 vault status
+
+Kill Process :
+	ps -ef | grep vault
+	kill -9 692
+
+
+
+!!! ---------------------------------------------  Enterprise Mode ---------------------------------------------!!!
+
+cd /e/Tutorials/Vault/VaultWork/enterprise
+
+Create 2 directories :
+	mkdir vault-data
+	mkdir logs
+	
+
+Create a file --> config.hcl
+	storage "file" {
+	  path    = "/e/Tutorials/Vault/VaultWork/enterprise/vault-data"
+	  node_id = "node1"
+	}
+
+	listener "tcp" {
+	  address     = "127.0.0.1:8200"
+	  tls_disable = "true"
+	}
+
+	ui = true
+	api_addr 		= "http://127.0.0.1:8200"
+	disable_mlock 	= true
+	log_level 		= "TRACE"
+	cluster_addr 	= "http://127.0.0.1:8201"
+
+
+
+cd /e/Tutorials/Vault/VaultWork/enterprise
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+export VAULT_TOKEN=""
+export LOG_FILE='/e/Tutorials/Vault/VaultWork/enterprise/logs/vault.log'
+nohup vault server -config=/e/Tutorials/Vault/VaultWork/enterprise/config.hcl > $LOG_FILE 2>&1 &
+
+
+
+$ vault operator init
+		Unseal Key 1: Ap3DaTeuyA2vTHCvMQ3PvMTvuRexcx3KHmI8BRFu4SA6
+		Unseal Key 2: tEwUubOlgCffTSTzJxsQcQ4bJlJCnzqrIr0ToB2omTas
+		Unseal Key 3: qJl1pBrMtbirsfx2mDbfbCnbhzcGlyUhAjo8nm0b9LLB
+		Unseal Key 4: ayUNVw0rqrTFjPYSLPTAEHEb5sHaIROZupEFHXT7XuCS
+		Unseal Key 5: 6O34FCuPwTV4aTd8xUP2+avtUDwkeqf70pakLCy09c3U
+
+		Initial Root Token: hvs.0LEwmKfdK5IPzZBQEQWDh4MF
+
+		Vault initialized with 5 key shares and a key threshold of 3. Please securely
+		distribute the key shares printed above. When the Vault is re-sealed,
+		restarted, or stopped, you must supply at least 3 of these keys to unseal it
+		before it can start servicing requests.
+
+		Vault does not store the generated root key. Without at least 3 keys to
+		reconstruct the root key, Vault will remain permanently sealed!
+
+		It is possible to generate new unseal keys, provided you have a quorum of
+		existing unseal keys shares. See "vault operator rekey" for more information.
+
+
+export VAULT_TOKEN=hvs.0LEwmKfdK5IPzZBQEQWDh4MF
+
+vault operator unseal Ap3DaTeuyA2vTHCvMQ3PvMTvuRexcx3KHmI8BRFu4SA6
+vault operator unseal qJl1pBrMtbirsfx2mDbfbCnbhzcGlyUhAjo8nm0b9LLB
+vault operator unseal ayUNVw0rqrTFjPYSLPTAEHEb5sHaIROZupEFHXT7XuCS
+
+
+Cross-Chek :
+	 curl -k -s --head $VAULT_ADDR/v1/sys/health
+	 or
+	 http://127.0.0.1:8200/ui/
+	 or 
+	 vault status
+
+Kill Process :
+	ps -ef | grep vault
+	kill -9 692
+
+

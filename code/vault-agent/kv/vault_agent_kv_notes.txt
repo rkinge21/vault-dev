@@ -1,0 +1,136 @@
+
+!!! ---------------------------------------------  DEV Mode ---------------------------------------------!!!
+cd /e/Tutorials/Vault/VaultWork/dev/
+Create 2 directories :
+  mkdir vault-data
+  mkdir logs
+  
+cd /e/Tutorials/Vault/VaultWork/dev/
+>vault_audit_raw.log
+>logs/vault.log
+
+export VAULT_ADDR=http://127.0.0.1:8200
+export VAULT_TOKEN=root
+export LOG_FILE='/e/Tutorials/Vault/VaultWork/dev/logs/vault.log'
+nohup vault server -dev -dev-root-token-id root > $LOG_FILE 2>&1 &
+
+sleep 5
+cat logs/vault.log
+
+
+vault status
+vault operator unseal 
+vault status
+
+
+Cross-Chek :
+   curl -k -s --head $VAULT_ADDR/v1/sys/health
+   curl -s -H "X-Vault-Token: $VAULT_TOKEN" --request GET  $VAULT_ADDR/v1/sys/host-info | jq -r .
+   or
+   http://127.0.0.1:8200/ui/
+   or 
+   vault status
+
+Kill Process :
+  ps -ef | grep vault
+  kill -9 692
+
+
+!!! ---------------------------------------------  Vault-Agent for KV ---------------------------------------------!!!
+
+cd /e/Tutorials/Vault/VaultWork/code/vault-agent/kv
+
+# Create File :
+touch role_id_kv
+touch secret_id_kv
+touch secret_kv
+
+
+# Cleanup :
+>role_id_kv
+>secret_id_kv
+>secret_kv
+
+
+echo -e "\n# ----------  Create a secret   ----------- #"
+vault secrets enable -version=2 kv
+vault kv put kv/agent/secret username=rahul password=kinge
+vault kv get kv/agent/secret
+
+echo -e "\n# ----------  Create access policy   ----------- #"
+cat <<EOF > agent-policy-kv.policy
+path "kv/data/agent/secret" {
+  capabilities = ["read", "update"]
+}
+EOF
+
+
+vault policy fmt agent-policy-kv.policy
+vault policy write agent-policy-kv agent-policy-kv.policy
+vault policy list
+
+
+
+echo -e "\n# ----------  Configure AppRole auth method   ----------- #"
+vault auth enable approle
+vault write auth/approle/role/vaultagent-role-kv \
+    token_num_uses=5 \
+    token_ttl=10s \
+    token_max_ttl=30s \
+    secret_id_ttl=1m \
+    secret_id_num_uses=10 \
+    policies="agent-policy-kv"
+
+# or
+# vault write auth/approle/role/vaultagent-role-kv  token_policies="agent-policy-kv"
+
+# Error : 
+# secret_id_ttl --> Code: 400. Errors: * invalid secret id
+# token_ttl     --> Code: 403. Errors: * permission denied
+
+
+# Read Role
+vault read auth/approle/role/vaultagent-role-kv
+
+# Delete Role
+# vault delete auth/approle/role/vaultagent-role-kv
+
+
+export VAULT_TOKEN="root"
+
+echo -e "\n# ----------  Get Vault Agent Role ID   ----------- #"
+export VAULTAGENT_ROLE_ID=$(vault read -format=json auth/approle/role/vaultagent-role-kv/role-id | jq -r .data.role_id)
+echo $VAULTAGENT_ROLE_ID | tee role_id_kv
+
+echo -e "\n# ----------  Get Vault Agent Secret ID   ----------- #"
+export VAULTAGENT_SECRET_ID=$(vault write -force -format=json auth/approle/role/vaultagent-role-kv/secret-id | jq -r .data.secret_id)
+echo $VAULTAGENT_SECRET_ID | tee secret_id_kv
+
+# ---------------------------------------------------
+export VAULT_TOKEN=$(vault write -format=json auth/approle/login  role_id=${VAULTAGENT_ROLE_ID}  secret_id=${VAULTAGENT_SECRET_ID} | jq -r '.auth.client_token')
+
+# test resulting token
+vault token lookup
+
+
+
+# ---------------------------------------------------
+echo -e "\n# ----------  Test AppRole auth   ----------- #"
+vault write auth/approle/login  role_id=$VAULTAGENT_ROLE_ID  secret_id=$VAULTAGENT_SECRET_ID
+# or
+curl -s -k -XPOST -d "{\"role_id\":\"${VAULTAGENT_ROLE_ID}\",\"secret_id\":\"${VAULTAGENT_SECRET_ID}\"}" $VAULT_ADDR/v1/auth/approle/login | jq -r .
+
+
+
+
+
+cat <<EOF > agent-secret-kv.ctmpl
+{{ with secret "kv/agent/secret" -}}
+username = "{{ .Data.data.username }}"
+password = "{{ .Data.data.password }}"
+{{- end }}
+EOF
+
+
+vault agent -config=vaultagent-kv-config.hcl
+vault agent -config=vaultagent-kv-config.hcl -log-level debug

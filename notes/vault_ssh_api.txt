@@ -1,0 +1,62 @@
+
+Ref : https://www.vaultproject.io/api/secret/ssh#submit-ca-information
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+export VAULT_TOKEN='s.jX2zwIdh8aJUEnLHUQht6yRi'
+
+
+---------------------     CA Information      ------------------------
+Submit CA Information :
+  curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request POST \
+      --data '{"generate_signing_key": true}' \
+      $VAULT_ADDR/v1/ssh-client-signer/config/ca | jq
+
+
+Delete CA Information :
+  curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request DELETE $VAULT_ADDR/v1/ssh-client-signer/config/ca | jq  
+
+
+Read Public Key :
+  curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request GET $VAULT_ADDR/v1/ssh-client-signer/config/ca | jq
+  or
+  curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request GET $VAULT_ADDR/v1/ssh-client-signer/public_key
+
+
+---------------------     Roles      ------------------------
+
+Create Role :
+  curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request POST \
+      --data @payload_custom.json \
+      $VAULT_ADDR/v1/ssh-client-signer/roles/ec2-user-role
+
+List Role :
+  curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request LIST $VAULT_ADDR/v1/ssh-client-signer/roles | jq
+
+Read Role :
+  curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request GET $VAULT_ADDR/v1/ssh-client-signer/roles/ec2-user-role  | jq
+
+Delete Role :
+  curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request DELETE $VAULT_ADDR/v1/ssh-client-signer/roles/ec2-user-role
+
+
+---------------------     Create trusted-user-ca-keys.pem      ------------------------
+
+curl http://127.0.0.1:8200/v1/ssh-client-signer/public_key -o /etc/ssh/trusted-user-ca-keys.pem
+
+sudo vi /etc/ssh/sshd_config
+  Add below entry :
+    TrustedUserCAKeys /etc/ssh/trusted-user-ca-keys.pem
+
+---------------------     Sign SSH Key      ------------------------
+
+Sign SSH Key :
+  curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request POST \
+    --data @sign_ssh_payload.json $VAULT_ADDR/v1/ssh-client-signer/sign/ec2-user-role | jq
+
+  curl -s --header "X-Vault-Token: $VAULT_TOKEN" --request POST \
+    --data @sign_ssh_payload.json $VAULT_ADDR/v1/ssh-client-signer/sign/ec2-user-role | jq -r .data.signed_key > signed-cert-moba-custom.pub
+
+
+---------------------     From Personal Laptop      ------------------------
+
+ssh -i signed-cert-moba-60.pub -i id_rsa ec2-user@52.210.197.72

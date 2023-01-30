@@ -1,0 +1,52 @@
+
+Ref : 	https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines
+	:	https://www.vaultproject.io/docs/secrets/kv/kv-v2
+
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+export VAULT_TOKEN='s.1KahMl2PU5h9c3YAVojIiHjr'
+
+
+
+KV Secrets Engine - Version 2 :
+	vault secrets enable -version=2 kv
+
+Writing/Reading arbitrary data :
+	vault kv put kv/my-secret foo=a bar=b
+	vault kv get kv/my-secret
+	vault kv list kv/
+	vault kv delete kv/my-secret
+	vault kv destroy -versions=1 kv/my-secret
+
+	Permanently delete all metadata and versions for a key:
+		vault kv metadata delete kv/my-secret
+
+
+
+
+vault auth enable userpass
+
+vault write auth/userpass/users/kingerah password=rahul policies=admins
+or
+vault write auth/userpass/users/kingerah password=rahul
+
+vault login -method=userpass username=kingerah password=rahul
+		WARNING! The VAULT_TOKEN environment variable is set! This takes precedence
+		over the value set by this command. To use the value set by this command,
+		unset the VAULT_TOKEN environment variable or set it to the token displayed
+		below.
+
+		Success! You are now authenticated. The token information displayed below
+		is already stored in the token helper. You do NOT need to run "vault login"
+		again. Future Vault requests will automatically use this token.
+
+		Key                    Value
+		---                    -----
+		token                  s.IzllFkvRWqv2nfujZeGyryIq
+		token_accessor         eB7k12K3cP31KxmdV2v9AUFX
+		token_duration         768h
+		token_renewable        true
+		token_policies         ["default"]
+		identity_policies      []
+		policies               ["default"]
+		token_meta_username    kingerah
