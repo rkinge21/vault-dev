@@ -1,0 +1,366 @@
+!!! ---------------------------------------------  Vault-DEV Mode ---------------------------------------------!!!
+cd /e/Tutorials/Vault/VaultWork/dev/
+Create 2 directories :
+  mkdir vault-data
+  mkdir logs
+  
+cd /e/Tutorials/Vault/VaultWork/dev/
+>vault_audit_raw.log
+>logs/vault.log
+
+export VAULT_ADDR=http://127.0.0.1:8200
+export VAULT_TOKEN="root"
+export LOG_FILE='/e/Tutorials/Vault/VaultWork/dev/logs/vault.log'
+nohup vault server -dev -dev-root-token-id root > $LOG_FILE 2>&1 &
+
+sleep 5
+cat logs/vault.log
+
+vault operator unseal 
+vault status
+
+
+Cross-Chek :
+   curl -k -s --head $VAULT_ADDR/v1/sys/health
+   curl -s -H "X-Vault-Token: $VAULT_TOKEN" --request GET  $VAULT_ADDR/v1/sys/host-info | jq -r .
+   or
+   http://127.0.0.1:8200/ui/
+   or 
+   vault status
+
+Kill Process :
+  ps -ef | grep vault
+  kill -9 692
+
+
+!!! ---------------------------------------------  Enabling/Disabling Audit ---------------------------------------------!!!
+
+
+vault audit enable file file_path=/e/Tutorials/Vault/VaultWork/dev/vault_audit.log
+# or
+vault audit enable file -path="file_raw" log_raw=true file_path=/e/Tutorials/Vault/VaultWork/dev/vault_audit_raw.log
+
+
+
+!!! ---------------------------------------------  Auth methods - AppRole - Explained ---------------------------------------------!!!
+
+vault auth list
+vault secrets list
+
+# ----------------     Create KV secrets      -----------------
+# before enabling auth method --> approle, let's create KV secrets and policiy first 
+vault kv put secret/mysql/webapp db_name="users" username="Iron" password="Man"
+vault kv get secret/mysql/webapp
+
+
+
+!!! ---------------------------------------------  Auth methods - AppRole - Jenkins ---------------------------------------------!!!
+
+Ref : https://codeburst.io/read-vaults-secrets-from-jenkin-s-declarative-pipeline-50a690659d6
+
+# ----------------     Enable AppRole      -----------------
+vault auth enable approle
+
+
+# ----------------     Create jenkins Policy      -----------------
+vault policy write jenkins-policy -<<EOF
+# Read-only permission on secrets stored at 'secret/data/mysql/webapp'
+path "secret/data/jenkins/*" {
+  capabilities = [ "read" ]
+}
+EOF
+vault policy read jenkins-policy
+
+
+
+# ----------------     Create AppRole - jenkins      -----------------
+vault write auth/approle/role/jenkins token_ttl=1h token_max_ttl=4h token_policies="jenkins-policy"
+
+
+# ----------------     Get RoleID and SecretID      -----------------
+vault read auth/approle/role/jenkins/role-id
+vault write -f auth/approle/role/jenkins/secret-id
+
+
+# ----------------     Create KV Secret for Github      -----------------
+tee github.json <<EOF
+{
+  "private-token": "76358746321876543",
+  "public-token": "jhflkweb8y7432",
+  "api-key": "80493286nfbds43"
+}
+EOF
+vault kv put secret/jenkins/github @github.json
+
+
+
+# ----------------     Create KV secrets      -----------------
+vault kv put secret/jenkins/webapp db_name="users" username="Iron" password="Man"
+vault kv get secret/jenkins/webapp
+
+
+
+
+Ref : https://plugins.jenkins.io/hashicorp-vault-pipeline/
+
+Jenkinsfile : 
+
+    def secrets = [
+      [path: 'secret/jenkins/webapp', engineVersion: 2, secretValues: [
+        [Var: 'DB_NAME', vaultKey: 'db_name'],
+        [envVar: 'DB_USERNAME', vaultKey: 'username'],
+        [envVar: 'DB_PASSWORD', vaultKey: 'password']]],
+    ]
+    def configuration = [vaultUrl: 'http://127.0.0.1:8200',  vaultCredentialId: 'vault-approle', engineVersion: 2]
+                          
+    pipeline {
+        agent any
+        options {
+            buildDiscarder(logRotator(numToKeepStr: '20'))
+            disableConcurrentBuilds()
+        }
+        stages{   
+          stage('Vault') {
+            steps {
+              withVault([configuration: configuration, vaultSecrets: secrets]) {
+                echo "This is a DB Name  : ${DB_NAME}"
+                script {
+                    if (DB_NAME == 'users') {
+                        echo 'DB name matched'
+                    } else {
+                        echo 'DB name is different'
+                    }
+                }
+              }
+            }  
+          }
+        }
+    }
+
+
+!!! ---------------------------------------------  Jenkins - Docker  ---------------------------------------------!!!
+
+docker ps -a
+docker stop $(docker ps -qa)
+sleep 2
+docker rm $(docker ps -qa)
+docker ps -a
+
+
+
+docker image prune -a
+docker image prune -a --filter "until=24h"
+
+
+docker volume ls
+docker volume prune
+docker volume prune --filter "label!=keep"
+
+# Complete Cleanup
+docker system prune --volumes
+docker volume prune -f
+docker network prune -f
+docker system prune -f
+
+# -----------------------   Start Container : port 8088  -----------------------
+
+docker run -itd --name my_jenkins_8088 -p 8088:8080 -p 50088:50000 -v E:/Tutorials/Jenkins/jdk11/container_volume::/var/jenkins_home jenkins/jenkins:lts-jdk11
+docker logs my_jenkins_8088
+docker exec -u root -it my_jenkins_8088 bash
+
+http://localhost:8088/
+
+
+
+# -----------------------   Start Container : port 8099  -----------------------
+
+docker run -itd --name my_jenkins_8099 --memory="1g" --cpus="2.0" -p 8099:8081 -p 50099:50000 -v E:/Tutorials/Jenkins/jdk11/container_volume:/var/jenkins_home jenkins/jenkins:lts-jdk11 --httpPort=8081
+docker ps -a
+docker stats
+
+
+docker logs my_jenkins_8099
+docker logs -f my_jenkins_8099
+
+docker exec -u root -it my_jenkins_8099 bash
+
+http://localhost:8099/
+
+
+
+# -----------------------   Size  -----------------------
+docker system df
+docker system df --verbose
+
+docker ps -as
+
+docker stats
+docker stats $(docker ps --format={{.Names}}) --no-stream
+docker stats $(docker ps -q) --no-stream
+
+
+
+# -----------------------    Start Container : using Dockerfile - Java 11  -----------------------
+
+FROM jenkins/jenkins:lts-jdk11
+USER root
+
+ENV JENKINS_OPTS --httpPort=8082
+ENV JENKINS_SLAVE_AGENT_PORT 50077
+
+RUN apt update && \
+    apt install -y --no-install-recommends gnupg curl ca-certificates apt-transport-https && \
+    curl -sSfL https://apt.octopus.com/public.key | apt-key add - && \
+    sh -c "echo deb https://apt.octopus.com/ stable main > /etc/apt/sources.list.d/octopus.com.list" && \
+    apt update && apt install -y vim
+
+RUN jenkins-plugin-cli --plugins pipeline-model-definition git github github-branch-source:latest
+RUN jenkins-plugin-cli --plugins hashicorp-vault-plugin:359.v2da_3b_45f17d5
+COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
+RUN jenkins-plugin-cli -f /usr/share/jenkins/ref/plugins.txt
+
+USER jenkins
+EXPOSE 8082 50077
+
+
+---------------------------------
+
+docker build . -t myjenkins_jdk11
+
+docker run -itd --name my_jenkins_8077_jdk11 --memory="1.5g" --cpus="2.0" -p 8077:8082 -p 50077:50077 -v E:/Tutorials/Jenkins/jdk11/container_volume:/var/jenkins_home myjenkins_jdk11
+docker logs -f my_jenkins_8077_jdk11
+docker exec -u root -it my_jenkins_8077_jdk11 bash
+
+http://localhost:8077/
+
+
+docker exec -it my_jenkins_8077_jdk11 ls -lrt var/jenkins_home
+
+
+
+# -----------------------    Start Container : using Dockerfile - Java 8  -----------------------
+
+# FROM jenkins/jenkins:lts-jdk8
+FROM jenkins/jenkins:latest-jdk8
+# FROM jenkins/jenkins:2.307-jdk8
+USER root
+
+ENV JENKINS_OPTS --httpPort=8088
+ENV JENKINS_SLAVE_AGENT_PORT 50088
+
+RUN apt update && \
+    apt install -y --no-install-recommends gnupg curl ca-certificates apt-transport-https && \
+    curl -sSfL https://apt.octopus.com/public.key | apt-key add - && \
+    sh -c "echo deb https://apt.octopus.com/ stable main > /etc/apt/sources.list.d/octopus.com.list" && \
+    apt update && apt install -y vim
+
+# Ref : https://github.com/jenkinsci/docker
+RUN jenkins-plugin-cli --plugins pipeline-model-definition git github github-branch-source:latest
+RUN jenkins-plugin-cli --plugins hashicorp-vault-plugin:359.v2da_3b_45f17d5
+
+COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
+RUN jenkins-plugin-cli -f /usr/share/jenkins/ref/plugins.txt
+
+
+USER jenkins
+EXPOSE 8088 50088
+
+
+
+# Steps : to run  Dockerfile
+
+docker build . -t myjenkins_jdk8
+docker run -itd --name my_jenkins_8088_jdk8 --memory="1.5g" --cpus="2.0" -p 8088:8088 -p 50088:50088 -v E:/Tutorials/Jenkins/jdk8/container_volume:/var/jenkins_home myjenkins_jdk8
+docker logs -f my_jenkins_8088_jdk8
+docker exec -u root -it my_jenkins_8088_jdk8 bash
+
+http://localhost:8088/
+
+
+docker stop my_jenkins_8088_jdk8
+docker rm my_jenkins_8088_jdk8
+
+
+
+# -----------------------   Docker-Desktop Remote API - Windows    -----------------------
+
+Ref : https://medium.com/@ssmak/how-to-enable-docker-remote-api-on-docker-host-7b73bd3278c6
+
+
+docker remote api port for 
+  Windows --> 2375
+  Linux   --> 4243
+
+
+using Docker Desktop, 
+  go to settings and check "Expose daemon on tcp://localhost:2375 without TLS"
+
+curl http://localhost:2375/images/json
+curl http://localhost:2375/version
+
+tcp://localhost:2375
+tcp://host.docker.internal:2375/
+
+
+Access Host from Container 
+Ref : https://docs.docker.com/desktop/networking/#i-want-to-connect-from-a-container-to-a-service-on-the-host
+    : https://stackoverflow.com/questions/40746453/how-to-connect-to-docker-host-from-container-on-windows-10-docker-for-windows
+
+curl http://host.docker.internal:2375/version
+
+
+
+# -----------------------   Jenkins Docker Slave   -----------------------
+
+cd /e/Tutorials/Jenkins/jenkins-docker-slave
+
+Ref : 
+  Youtube : https://www.youtube.com/watch?v=kHJGYTcLNj0
+  Google : 
+    https://devopscube.com/docker-containers-as-build-slaves-jenkins/
+    https://github.com/bibinwilson/jenkins-docker-slave
+    https://medium.com/xebia-engineering/using-docker-containers-as-jenkins-build-slaves-a0bb1c9190d#:~:text=Using%20ephemeral%20Docker%20containers%20as,of%20static%20Jenkins%20build%20VMs.
+    https://narenchejara.medium.com/how-to-configure-docker-container-as-build-slaves-for-jenkins-d7795f78402d
+
+
+
+docker build . -t myjenkins-slave
+
+docker run -itd --name myjenkins_slave_jdk8 --memory="1.5g" --cpus="2.0"  myjenkins-slave
+
+
+docker logs -f myjenkins_slave_jdk8
+docker exec -u root -it myjenkins_slave_jdk8 bash
+
+docker stop myjenkins_slave_jdk8
+docker rm myjenkins_slave_jdk8
+
+
+curl http://host.docker.internal:2375/version
+
+
+
+Label  :  docker-slave-demo 
+
+myjenkins-slave
+
+echo -e "\n------------------------    Jenkins Docker Slave - works   -------------------------\n"
+
+
+
+
+192.168.65.0/24
+
+{"rkinge21":"eyJhbGciOiJFUzI1NiIsImtpZCI6Ii9JbDV0SGd6YXFxamg2dnAxSmU5cEcwSWMrcy9lUlE3QzFkTGttSVR1b3AwejhxTE5zek91cUlKbGRXU0VQaXRFTi9jQ1c1Qkt0MGJ1VW9WSHk5bzZBPT0iLCJ0eXAiOiJKV1QifQ.eyJhdWQiOlsiaHR0cHM6Ly9zbnlrLmlvL2FwaS92MS8iXSwiZXhwIjoxNjU2MjY1NDc4LCJpYXQiOjE2NTYyNjE4NzgsImlzcyI6Imh0dHBzOi8vaHViLmRvY2tlci5jb20vIiwic3ViIjoiNjliOTQ1NWUtZGJkMi05MWQwLTY2OTItYjVkY2ExNDQ2Y2NhIn0.tE5-AhCWB-dUkziD66fbAm5I-3O2Iy-poEQadNdqFP-2bjiLYscpwUDoBuQ8Cf9yKkq2nbVkm4fOdRIIwDPbGQ"}
+
+.token_seed
+{
+  "registry-1.docker.io": {
+    "Seed": "E17MSRP9K7U/4QD6Faafeg=="
+  }
+}
+
+docker logout
+docker logout registry-1.docker.io
+
+docker login registry-1.docker.io -u rkinge21 -p 9975056362
