@@ -363,4 +363,4 @@ echo -e "\n------------------------    Jenkins Docker Slave - works   ----------
 docker logout
 docker logout registry-1.docker.io
 
-docker login registry-1.docker.io -u rkinge21 -p 9975056362
+docker login registry-1.docker.io -u rkinge21 -p << docker hub password >>
