@@ -1,11 +1,12 @@
-$env:VAULT_ADDR="https://csm-uk1-dev.barcapint.com:8200"
+# For Windows Set Env like below
+$env:VAULT_ADDR="https://<< domain name >>:8200"
 $env:VAULT_SKIP_VERIFY="true"
 
-./vault login -path=intranet -method=ldap -token-only username=kingerah
+./vault login -path=intranet -method=ldap -token-only username=<< ldap username >>
 
-$env:VAULT_NAMESPACE="CSM"
+$env:VAULT_NAMESPACE="<< namespace if any >>"
 
-$env:VAULT_TOKEN="hvs.CAESIEbLR2t1GcPMr_AQhHKldRugHYMsapCDQk0BaWh_zEDMGh4KHGh2cy5vWjk3TFJrQ2ltQzlGYkhGR3lhN2V3WFQ"
+$env:VAULT_TOKEN="<< vault token >>"
 
 
 ./vault token lookup
